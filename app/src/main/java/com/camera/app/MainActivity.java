@@ -23,7 +23,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btnStartStop;
     private Button btnSettings;
     private Button btnGallery;
-    private Button btnTestStorage;
     private TextView tvStatus;
     private boolean isRunning = false;
     
@@ -43,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
         btnStartStop = findViewById(R.id.btn_start_stop);
         btnSettings = findViewById(R.id.btn_settings);
         btnGallery = findViewById(R.id.btn_gallery);
-        btnTestStorage = findViewById(R.id.btn_test_storage);
         tvStatus = findViewById(R.id.tv_status);
     }
     
@@ -78,17 +76,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        
-        btnTestStorage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                TestPhotoStorage.testPhotoStorage(MainActivity.this);
-                Toast.makeText(MainActivity.this, "存储测试已完成，请查看日志", Toast.LENGTH_SHORT).show();
-            }
-        });
-        
-        // 临时显示测试按钮用于调试
-        btnTestStorage.setVisibility(View.VISIBLE);
     }
     
     private boolean checkPermissions() {

@@ -60,6 +60,7 @@ public class CameraWorker extends Worker {
         cameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
             @Override
             public void onCaptureSuccess(String imagePath) {
+                Log.d(TAG, "拍照成功，图片路径: " + imagePath);
                 photoPath[0] = imagePath;
                 synchronized (lock) {
                     lock.notify();
@@ -68,6 +69,7 @@ public class CameraWorker extends Worker {
             
             @Override
             public void onCaptureError(Exception e) {
+                Log.e(TAG, "拍照失败", e);
                 captureError[0] = e;
                 synchronized (lock) {
                     lock.notify();
@@ -76,29 +78,41 @@ public class CameraWorker extends Worker {
         });
         
         // 打开相机
+        Log.d(TAG, "打开相机");
         cameraManager.openCamera();
         
+        // 等待一段时间确保相机打开
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            // 忽略中断异常
+        }
+        
         // 拍照
+        Log.d(TAG, "执行拍照");
         cameraManager.takePicture();
         
         // 等待拍照完成
+        Log.d(TAG, "等待拍照完成");
         synchronized (lock) {
-            lock.wait(10000); // 最多等待10秒
+            lock.wait(15000); // 最多等待15秒
         }
         
         // 关闭相机
+        Log.d(TAG, "关闭相机");
         cameraManager.closeCamera();
         
         if (captureError[0] != null) {
             throw captureError[0];
         }
         
+        Log.d(TAG, "返回照片路径: " + photoPath[0]);
         return photoPath[0];
     }
     
     private void processPicture(String photoPath, SettingsManager settingsManager, 
                                StorageManager storageManager, EmailManager emailManager) {
-        if (photoPath == null) {
+        if (photoPath == null || photoPath.isEmpty()) {
             Log.e(TAG, "照片路径为空");
             return;
         }

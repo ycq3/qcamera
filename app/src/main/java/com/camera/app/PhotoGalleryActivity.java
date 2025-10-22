@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdapter.OnPhotoClickListener {
     
@@ -72,7 +73,7 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
             File[] photoFiles = photoDir.listFiles();
             if (photoFiles != null) {
                 for (File file : photoFiles) {
-                    if (file.isFile() && file.getName().toLowerCase().endsWith(".jpg")) {
+                    if (file.isFile() && file.getName().toLowerCase(Locale.ROOT).endsWith(".jpg")) {
                         photoList.add(new PhotoItem(file.getAbsolutePath(), file.lastModified()));
                     }
                 }

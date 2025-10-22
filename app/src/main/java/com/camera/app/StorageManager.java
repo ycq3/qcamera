@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Locale;
 
 public class StorageManager {
     
@@ -71,7 +72,7 @@ public class StorageManager {
             File[] photoFiles = photoDir.listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File file) {
-                    return file.isFile() && file.getName().toLowerCase().endsWith(".jpg");
+                    return file.isFile() && file.getName().toLowerCase(Locale.ROOT).endsWith(".jpg");
                 }
             });
             

@@ -48,6 +48,7 @@ public class CustomCameraManager {
     private Size previewSize;
     
     private CaptureCallback captureCallback;
+    private boolean isCameraOpened = false;
     
     public interface CaptureCallback {
         void onCaptureSuccess(String imagePath);
@@ -60,6 +61,10 @@ public class CustomCameraManager {
     
     public void setCaptureCallback(CaptureCallback callback) {
         this.captureCallback = callback;
+    }
+    
+    public boolean isCameraOpened() {
+        return isCameraOpened;
     }
     
     public void startBackgroundThread() {
@@ -82,9 +87,11 @@ public class CustomCameraManager {
     }
     
     public void openCamera() {
+        isCameraOpened = false;
         CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         try {
             cameraId = manager.getCameraIdList()[0]; // 使用后置摄像头
+            Log.d(TAG, "尝试打开相机 ID: " + cameraId);
             
             // 选择合适的预览尺寸
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
@@ -93,6 +100,7 @@ public class CustomCameraManager {
             if (map != null) {
                 Size[] sizes = map.getOutputSizes(ImageFormat.JPEG);
                 previewSize = chooseOptimalSize(sizes, 1920, 1080); // 默认使用1080p
+                Log.d(TAG, "选择预览尺寸: " + previewSize.getWidth() + "x" + previewSize.getHeight());
                 
                 // 初始化ImageReader
                 imageReader = ImageReader.newInstance(
@@ -104,12 +112,16 @@ public class CustomCameraManager {
             }
             
             manager.openCamera(cameraId, stateCallback, backgroundHandler);
+            Log.d(TAG, "已调用openCamera方法");
         } catch (CameraAccessException e) {
             Log.e(TAG, "无法访问相机", e);
+        } catch (Exception e) {
+            Log.e(TAG, "打开相机时发生未知错误", e);
         }
     }
     
     public void closeCamera() {
+        isCameraOpened = false;
         if (captureSession != null) {
             captureSession.close();
             captureSession = null;
@@ -125,8 +137,15 @@ public class CustomCameraManager {
     }
     
     public void takePicture() {
-        if (cameraDevice == null) return;
+        if (cameraDevice == null) {
+            Log.e(TAG, "相机未打开");
+            if (captureCallback != null) {
+                captureCallback.onCaptureError(new Exception("相机未打开"));
+            }
+            return;
+        }
         
+        Log.d(TAG, "开始拍照");
         try {
             final CaptureRequest.Builder captureBuilder =
                     cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -148,9 +167,9 @@ public class CustomCameraManager {
                 @Override
                 public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
                     super.onCaptureFailed(session, request, failure);
-                    Log.e(TAG, "拍照失败");
+                    Log.e(TAG, "拍照失败: " + failure.getReason());
                     if (captureCallback != null) {
-                        captureCallback.onCaptureError(new Exception("拍照失败"));
+                        captureCallback.onCaptureError(new Exception("拍照失败: " + failure.getReason()));
                     }
                 }
             };
@@ -158,8 +177,14 @@ public class CustomCameraManager {
             captureSession.stopRepeating();
             captureSession.abortCaptures();
             captureSession.capture(captureBuilder.build(), captureListener, backgroundHandler);
+            Log.d(TAG, "已发送拍照请求");
         } catch (CameraAccessException e) {
             Log.e(TAG, "拍照时发生错误", e);
+            if (captureCallback != null) {
+                captureCallback.onCaptureError(e);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "拍照时发生未知错误", e);
             if (captureCallback != null) {
                 captureCallback.onCaptureError(e);
             }
@@ -170,17 +195,23 @@ public class CustomCameraManager {
         @Override
         public void onOpened(CameraDevice camera) {
             cameraDevice = camera;
+            isCameraOpened = true;
+            Log.d(TAG, "相机已打开成功");
             createCameraPreview();
+            Log.d(TAG, "相机预览已创建");
         }
         
         @Override
         public void onDisconnected(CameraDevice camera) {
+            isCameraOpened = false;
             cameraDevice.close();
             cameraDevice = null;
+            Log.d(TAG, "相机已断开连接");
         }
         
         @Override
         public void onError(CameraDevice camera, int error) {
+            isCameraOpened = false;
             cameraDevice.close();
             cameraDevice = null;
             Log.e(TAG, "打开相机错误: " + error);
@@ -225,6 +256,7 @@ public class CustomCameraManager {
             = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
+            Log.d(TAG, "图像数据已准备好");
             backgroundHandler.post(new ImageSaver(reader.acquireNextImage()));
         }
     };
@@ -238,15 +270,18 @@ public class CustomCameraManager {
         
         @Override
         public void run() {
+            Log.d(TAG, "开始保存图片");
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             
             File file = createImageFile();
+            Log.d(TAG, "创建图片文件: " + file.getAbsolutePath());
             FileOutputStream output = null;
             try {
                 output = new FileOutputStream(file);
                 output.write(bytes);
+                Log.d(TAG, "图片保存成功");
                 
                 // 通知回调拍照成功
                 if (captureCallback != null) {
