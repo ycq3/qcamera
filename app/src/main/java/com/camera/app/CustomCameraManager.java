@@ -266,7 +266,7 @@ public class CustomCameraManager {
             if (isFlashEnabled) {
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
                 captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                Log.d(TAG, "设置拍照闪光灯模式为: FLASH_MODE_SINGLE");
+                Log.d(TAG, "设置拍照闪光灯模式为: FLASH_MODE_SINGLE (自动闪光)");
             } else {
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
                 captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
@@ -356,13 +356,16 @@ public class CustomCameraManager {
                     // 设置预览时的闪光灯状态（仅在需要持续闪光时使用）
                     if (isFlashEnabled) {
                         previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
+                        previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                         Log.d(TAG, "设置预览闪光灯模式为: FLASH_MODE_TORCH");
                     } else {
                         previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
+                        previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                         Log.d(TAG, "设置预览闪光灯模式为: FLASH_MODE_OFF");
                     }
                     
                     previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                    previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                     
                     // 使用setRepeatingBurst可能会更稳定
                     captureSession.setRepeatingRequest(previewBuilder.build(), null, backgroundHandler);
@@ -440,10 +443,18 @@ public class CustomCameraManager {
                 previewBuilder.addTarget(imageReader.getSurface());
             }
             
-            // 设置预览时的闪光灯状态（仅在需要持续闪光时使用）
+            // 设置预览时的闪光灯状态和自动曝光模式
             if (isFlashEnabled) {
                 previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
+                previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+            } else {
+                previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
+                previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
             }
+            
+            // 设置自动对焦
+            previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             
             // 创建capture session
             List<Surface> surfaces = new ArrayList<>();
@@ -465,7 +476,6 @@ public class CustomCameraManager {
                             
                             captureSession = session;
                             try {
-                                previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                                 // 只有在有预览surface时才设置重复请求
                                 if (finalPreviewSurface != null) {
                                     captureSession.setRepeatingRequest(previewBuilder.build(), null, backgroundHandler);

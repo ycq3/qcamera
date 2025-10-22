@@ -69,13 +69,10 @@ public class MainActivity extends AppCompatActivity {
     private TextureView textureView;
     private ImageView ivCapturedImage; // 用于显示拍摄照片的ImageView
     private ImageButton btnFlashIndicator; // 闪光灯指示器（图标）
-    private CameraDevice cameraDevice;
-    private CameraCaptureSession captureSession;
     private Handler backgroundHandler;
     private HandlerThread backgroundThread;
     private String cameraId;
     private Size previewSize;
-    private CaptureRequest.Builder previewRequestBuilder;
     private boolean isFlashOn = false; // 仅用于预览时的闪光灯指示
     private boolean isFlashEnabledForCapture = false; // 用于拍照时的闪光灯设置
     private boolean isPreviewShowing = false;
@@ -120,6 +117,10 @@ public class MainActivity extends AppCompatActivity {
             if ("com.camera.app.action.CAPTURE_COMPLETED".equals(action)) {
                 // 更新计数器显示
                 updateCaptureCountDisplay();
+                
+                // 显示最后拍摄的图片
+                String photoPath = intent.getStringExtra("photoPath");
+                showLastCapturedImage(photoPath);
             } else if ("com.camera.app.COUNT_RESET".equals(action)) {
                 // 计数器重置
                 updateCaptureCountDisplay();
@@ -272,6 +273,8 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
         
+        // 如果所有权限都已授予，初始化摄像头
+        initializeCameras();
         return true;
     }
     
@@ -359,6 +362,45 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     
+    // 安全地切换摄像头
+    private void switchCameraSafely() {
+        // 在后台线程中执行摄像头切换
+        if (backgroundHandler != null) {
+            backgroundHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // 关闭当前相机
+                        if (customCameraManager != null) {
+                            customCameraManager.closeCamera();
+                        }
+                        
+                        // 在主线程中更新UI
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                // 重新打开相机
+                                if (textureView.isAvailable()) {
+                                    openCamera(textureView.getWidth(), textureView.getHeight());
+                                } else {
+                                    textureView.setSurfaceTextureListener(surfaceTextureListener);
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        Log.e(TAG, "切换摄像头时发生错误", e);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "切换摄像头失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+    
     // 显示摄像头选择对话框
     private void showCameraSelection() {
         if (cameraIds == null || cameraIds.length == 0) {
@@ -388,43 +430,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         builder.show();
-    }
-    
-    // 安全地切换摄像头
-    private void switchCameraSafely() {
-        // 在后台线程中执行摄像头切换
-        if (backgroundHandler != null) {
-            backgroundHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // 关闭当前相机
-                        closeCamera();
-                        
-                        // 在主线程中更新UI
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                // 重新打开相机
-                                if (textureView.isAvailable()) {
-                                    openCamera(textureView.getWidth(), textureView.getHeight());
-                                } else {
-                                    textureView.setSurfaceTextureListener(surfaceTextureListener);
-                                }
-                            }
-                        });
-                    } catch (Exception e) {
-                        Log.e(TAG, "切换摄像头时发生错误", e);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(MainActivity.this, "切换摄像头失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                }
-            });
-        }
     }
     
     // 切换闪光灯设置（用于拍照）
@@ -617,21 +622,43 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     
-    // 显示上次拍摄的照片
-    private void showLastCapturedImage(String photoPath) {
-        // 在相机关闭后显示最后拍摄的照片
-        if (!isPreviewShowing && photoPath != null && !photoPath.isEmpty()) {
+    // 显示拍摄的照片
+    private void showCapturedImage(Bitmap bitmap) {
+        if (bitmap != null && ivCapturedImage != null) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     // 隐藏TextureView并显示ImageView
-                    textureView.setVisibility(View.GONE);
+                    if (textureView != null) {
+                        textureView.setVisibility(View.GONE);
+                    }
                     ivCapturedImage.setVisibility(View.VISIBLE);
-                    
-                    // 加载并显示图片
-                    Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
-                    if (bitmap != null) {
-                        ivCapturedImage.setImageBitmap(bitmap);
+                    ivCapturedImage.setImageBitmap(bitmap);
+                    Log.d(TAG, "显示拍摄的照片");
+                }
+            });
+        }
+    }
+    
+    // 显示上次拍摄的照片
+    private void showLastCapturedImage(String photoPath) {
+        // 显示最后拍摄的照片
+        if (photoPath != null && !photoPath.isEmpty()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // 隐藏TextureView并显示ImageView
+                    if (textureView != null) {
+                        textureView.setVisibility(View.GONE);
+                    }
+                    if (ivCapturedImage != null) {
+                        ivCapturedImage.setVisibility(View.VISIBLE);
+                        
+                        // 加载并显示图片
+                        Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
+                        if (bitmap != null) {
+                            ivCapturedImage.setImageBitmap(bitmap);
+                        }
                     }
                 }
             });
@@ -653,9 +680,15 @@ public class MainActivity extends AppCompatActivity {
             customCameraManager = null;
         }
         
-        // 原有的关闭相机方法
-        closeCamera();
         stopBackgroundThread();
+        
+        // 确保ImageView也隐藏
+        if (ivCapturedImage != null) {
+            ivCapturedImage.setVisibility(View.GONE);
+        }
+        if (textureView != null) {
+            textureView.setVisibility(View.VISIBLE);
+        }
     }
     
     private void startBackgroundThread() {
@@ -693,8 +726,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
             // 重新配置相机预览
-            if (isPreviewShowing && cameraDevice != null) {
-                closeCamera();
+            if (isPreviewShowing) {
+                // 关闭当前相机
+                if (customCameraManager != null) {
+                    customCameraManager.closeCamera();
+                }
                 openCamera(width, height);
             }
         }
@@ -740,6 +776,33 @@ public class MainActivity extends AppCompatActivity {
                             });
                         }
                     });
+                    
+                    // 设置拍照回调
+                    customCameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
+                        @Override
+                        public void onCaptureSuccess(String imagePath) {
+                            // 发送广播通知拍照完成
+                            Intent captureCompletedIntent = new Intent("com.camera.app.action.CAPTURE_COMPLETED");
+                            captureCompletedIntent.putExtra("photoPath", imagePath);
+                            sendBroadcast(captureCompletedIntent);
+                            
+                            // 发送显示最后图片的广播
+                            Intent showLastImageIntent = new Intent("com.camera.app.action.SHOW_LAST_IMAGE");
+                            showLastImageIntent.putExtra("photoPath", imagePath);
+                            sendBroadcast(showLastImageIntent);
+                        }
+                        
+                        @Override
+                        public void onCaptureError(Exception e) {
+                            Log.e(TAG, "拍照失败", e);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "拍照失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    });
                 }
                 
                 customCameraManager.startBackgroundThread();
@@ -748,162 +811,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
     
-    // 显示拍摄的照片
-    private void showCapturedImage(Bitmap bitmap) {
-        if (bitmap != null && ivCapturedImage != null) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // 隐藏TextureView并显示ImageView
-                    textureView.setVisibility(View.GONE);
-                    ivCapturedImage.setVisibility(View.VISIBLE);
-                    ivCapturedImage.setImageBitmap(bitmap);
-                    Log.d(TAG, "显示拍摄的照片");
-                }
-            });
-        }
-    }
-    
-    // 获取摄像头支持的最大分辨率
-    private Size getMaxResolution(String cameraId) throws CameraAccessException {
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        
-        if (map != null) {
-            Size[] sizes = map.getOutputSizes(SurfaceTexture.class);
-            // 按面积排序，获取最大分辨率
-            return Collections.max(Arrays.asList(sizes), new CompareSizesByArea());
-        }
-        return new Size(1920, 1080); // 默认分辨率
-    }
-    
-    private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
-        @Override
-        public void onOpened(@NonNull CameraDevice camera) {
-            cameraDevice = camera;
-            createCameraPreview();
-        }
-        
-        @Override
-        public void onDisconnected(@NonNull CameraDevice camera) {
-            cameraDevice.close();
-            cameraDevice = null;
-        }
-        
-        @Override
-        public void onError(@NonNull CameraDevice camera, int error) {
-            cameraDevice.close();
-            cameraDevice = null;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(MainActivity.this, "打开相机失败: 错误代码 " + error, Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-    };
-    
-    private void createCameraPreview() {
-        try {
-            SurfaceTexture texture = textureView.getSurfaceTexture();
-            if (texture == null) {
-                Log.e(TAG, "SurfaceTexture为空");
-                return;
-            }
-            
-            assert texture != null;
-            texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-            Surface surface = new Surface(texture);
-            
-            if (cameraDevice == null) {
-                Log.e(TAG, "相机设备为空");
-                return;
-            }
-            
-            previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            previewRequestBuilder.addTarget(surface);
-            
-            // 设置自动对焦
-            previewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            
-            // 设置预览时的闪光灯状态
-            if (isFlashEnabledForCapture) {
-                previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
-            }
-            
-            cameraDevice.createCaptureSession(Arrays.asList(surface),
-                    new CameraCaptureSession.StateCallback() {
-                        @Override
-                        public void onConfigured(@NonNull CameraCaptureSession session) {
-                            if (cameraDevice == null) return;
-                            
-                            captureSession = session;
-                            try {
-                                captureSession.setRepeatingRequest(previewRequestBuilder.build(), null, backgroundHandler);
-                            } catch (CameraAccessException e) {
-                                Log.e(TAG, "配置预览失败", e);
-                            }
-                        }
-                        
-                        @Override
-                        public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(MainActivity.this, "配置相机预览失败", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        }
-                    }, backgroundHandler);
-        } catch (Exception e) {
-            Log.e(TAG, "创建预览失败", e);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(MainActivity.this, "创建预览失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-    }
-    
-    private Size chooseOptimalSize(Size[] choices, int width, int height) {
-        List<Size> bigEnough = new ArrayList<>();
-        for (Size option : choices) {
-            if (option.getHeight() == option.getWidth() * height / width &&
-                    option.getWidth() >= width && option.getHeight() >= height) {
-                bigEnough.add(option);
-            }
-        }
-        
-        if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else {
-            return choices[0];
-        }
-    }
-    
     private static class CompareSizesByArea implements Comparator<Size> {
         @Override
         public int compare(Size lhs, Size rhs) {
             return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
                     (long) rhs.getWidth() * rhs.getHeight());
-        }
-    }
-    
-    private void closeCamera() {
-        try {
-            if (captureSession != null) {
-                captureSession.close();
-                captureSession = null;
-            }
-            if (cameraDevice != null) {
-                cameraDevice.close();
-                cameraDevice = null;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "关闭相机时发生错误", e);
         }
     }
     
@@ -931,7 +843,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        closeCamera();
+        // 使用CustomCameraManager关闭相机
+        if (customCameraManager != null) {
+            customCameraManager.closeCamera();
+            customCameraManager.stopBackgroundThread();
+        }
         stopBackgroundThread();
         stopProgressUpdate(); // 确保停止进度更新
         
