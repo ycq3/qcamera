@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -19,11 +21,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.PowerManager;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -49,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERMISSION_REQUEST_CODE = 100;
     
-    private Button btnStartStop;
+    private ProgressButton btnStartStop; // 修改为ProgressButton
     private Button btnSettings;
     private Button btnGallery;
     private Button btnFlashToggle; // 闪光灯切换按钮（文本按钮）
@@ -57,11 +61,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvStatus;
     private ImageView appIcon; // 应用图标
     private LinearLayout appIconContainer; // 图标容器
+    private TextView tvCaptureCount; // 拍照计数器显示
     private boolean isRunning = false;
     
     // 相机预览相关
     private FrameLayout cameraPreviewContainer;
     private TextureView textureView;
+    private ImageView ivCapturedImage; // 用于显示拍摄照片的ImageView
     private ImageButton btnFlashIndicator; // 闪光灯指示器（图标）
     private CameraDevice cameraDevice;
     private CameraCaptureSession captureSession;
@@ -74,10 +80,22 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFlashEnabledForCapture = false; // 用于拍照时的闪光灯设置
     private boolean isPreviewShowing = false;
     
+    // 进度条相关
+    private Handler progressHandler = new Handler();
+    private Runnable progressRunnable;
+    private long startTime;
+    private long interval; // 从设置中获取的间隔时间（毫秒）
+    
+    // 电源管理
+    private PowerManager.WakeLock wakeLock;
+    
     // 多摄像头支持
     private String[] cameraIds;
     private int currentCameraIndex = 0;
     private String[] cameraNames; // 摄像头名称
+    
+    // 拍照计数器
+    private CaptureCounter captureCounter;
     
     // 广播接收器，用于接收拍照服务的状态更新
     private BroadcastReceiver serviceStatusReceiver = new BroadcastReceiver() {
@@ -91,10 +109,39 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     
+    // 新增广播接收器，用于接收拍照完成的通知
+    private BroadcastReceiver captureCompletedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if ("com.camera.app.action.CAPTURE_COMPLETED".equals(action)) {
+                // 更新计数器显示
+                updateCaptureCountDisplay();
+            } else if ("com.camera.app.COUNT_RESET".equals(action)) {
+                // 计数器重置
+                updateCaptureCountDisplay();
+            } else if ("com.camera.app.action.SHOW_LAST_IMAGE".equals(action)) {
+                // 显示最后拍摄的图片
+                String photoPath = intent.getStringExtra("photoPath");
+                showLastCapturedImage(photoPath);
+            }
+        }
+    };
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // 初始化计数器
+        captureCounter = new CaptureCounter(getApplicationContext());
+        
+        // 设置窗口标志以支持锁屏状态下运行
+        setupWindowFlags();
+        
+        // 获取电源锁
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CameraApp::MyWakelockTag");
         
         // 确保ActionBar被隐藏
         ActionBar actionBar = getSupportActionBar();
@@ -109,8 +156,27 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter("com.camera.app.SERVICE_STATUS");
         registerReceiver(serviceStatusReceiver, filter);
         
+        // 注册拍照完成广播接收器
+        IntentFilter captureFilter = new IntentFilter();
+        captureFilter.addAction("com.camera.app.action.CAPTURE_COMPLETED");
+        captureFilter.addAction("com.camera.app.COUNT_RESET");
+        captureFilter.addAction("com.camera.app.action.SHOW_LAST_IMAGE"); // 添加新动作
+        registerReceiver(captureCompletedReceiver, captureFilter);
+        
         // 检查必要权限
         checkPermissions();
+        
+        // 初始化计数器显示
+        updateCaptureCountDisplay();
+    }
+    
+    // 设置窗口标志以支持锁屏状态下运行
+    private void setupWindowFlags() {
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                            WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON |
+                            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     }
     
     private void initViews() {
@@ -122,10 +188,12 @@ public class MainActivity extends AppCompatActivity {
         tvStatus = findViewById(R.id.tv_status);
         appIcon = findViewById(R.id.app_icon); // 初始化应用图标
         appIconContainer = findViewById(R.id.app_icon_container); // 初始化图标容器
+        tvCaptureCount = findViewById(R.id.tv_capture_count); // 初始化计数器显示
         
         // 初始化相机预览相关视图
         cameraPreviewContainer = findViewById(R.id.camera_preview_container);
         textureView = findViewById(R.id.texture_view);
+        ivCapturedImage = findViewById(R.id.iv_captured_image); // 初始化ImageView
         btnFlashIndicator = findViewById(R.id.btn_flash_indicator);
     }
     
@@ -359,6 +427,8 @@ public class MainActivity extends AppCompatActivity {
     // 切换闪光灯设置（用于拍照）
     private void toggleFlashSetting() {
         isFlashEnabledForCapture = !isFlashEnabledForCapture;
+        Log.d(TAG, "切换闪光灯设置 - 当前状态: " + isFlashEnabledForCapture);
+        Log.d(TAG, "切换后isFlashEnabledForCapture变量值: " + isFlashEnabledForCapture);
         btnFlashToggle.setText(isFlashEnabledForCapture ? "闪光灯: 开" : "闪光灯: 关");
         
         // 更新预览时的闪光灯指示器
@@ -375,12 +445,27 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void startCapture() {
+        // 获取拍照间隔设置
+        SettingsManager settingsManager = new SettingsManager(this);
+        interval = settingsManager.getCaptureInterval() * 1000L; // 转换为毫秒
+        
+        // 获取电源锁
+        if (!wakeLock.isHeld()) {
+            wakeLock.acquire(60*60*1000L /*60分钟*/);
+        }
+        
         // 显示相机预览
         showCameraPreview();
+        
+        // 在启动服务前记录当前闪光灯状态
+        Log.d(TAG, "启动拍照服务前检查 - 摄像头索引: " + currentCameraIndex + ", 闪光灯启用: " + isFlashEnabledForCapture);
+        Log.d(TAG, "确认isFlashEnabledForCapture变量值: " + isFlashEnabledForCapture);
         
         // 启动拍照服务
         Intent serviceIntent = new Intent(this, CameraService.class);
         // 传递摄像头索引和闪光灯设置给服务
+        Log.d(TAG, "启动拍照服务 - 摄像头索引: " + currentCameraIndex + ", 闪光灯启用: " + isFlashEnabledForCapture);
+        Log.d(TAG, "向Intent中放入flashEnabled值: " + isFlashEnabledForCapture);
         serviceIntent.putExtra("cameraIndex", currentCameraIndex);
         serviceIntent.putExtra("flashEnabled", isFlashEnabledForCapture);
         serviceIntent.setAction(CameraService.ACTION_START_CAPTURE);
@@ -392,9 +477,17 @@ public class MainActivity extends AppCompatActivity {
         
         // 更新UI状态
         updateUI(true);
+        
+        // 启动进度条更新
+        startProgressUpdate();
     }
     
     private void stopCapture() {
+        // 释放电源锁
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+        
         // 隐藏相机预览
         hideCameraPreview();
         
@@ -405,12 +498,71 @@ public class MainActivity extends AppCompatActivity {
         
         // 更新UI状态
         updateUI(false);
+        
+        // 停止进度条更新
+        stopProgressUpdate();
+        
+        // 重置会话计数
+        captureCounter.resetSessionCount();
+        updateCaptureCountDisplay();
+    }
+    
+    // 启动进度条更新
+    private void startProgressUpdate() {
+        // 停止之前的进度更新（如果有的话）
+        stopProgressUpdate();
+        
+        // 设置进度按钮为运行状态
+        btnStartStop.setProgressState(true);
+        
+        // 记录开始时间
+        startTime = System.currentTimeMillis();
+        
+        // 创建进度更新任务
+        progressRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isRunning) {
+                    long elapsed = System.currentTimeMillis() - startTime;
+                    float progress = (float) (elapsed % interval) / interval;
+                    btnStartStop.setProgress(progress);
+                    
+                    // 每100毫秒更新一次进度
+                    progressHandler.postDelayed(this, 100);
+                }
+            }
+        };
+        
+        // 启动进度更新
+        progressHandler.post(progressRunnable);
+    }
+    
+    // 停止进度条更新
+    private void stopProgressUpdate() {
+        if (progressRunnable != null) {
+            progressHandler.removeCallbacks(progressRunnable);
+            progressRunnable = null;
+        }
+        // 重置进度条
+        btnStartStop.setProgress(0f);
+        btnStartStop.setProgressState(false);
+    }
+    
+    // 更新计数器显示
+    private void updateCaptureCountDisplay() {
+        if (tvCaptureCount != null) {
+            int sessionCount = captureCounter.getSessionCount();
+            tvCaptureCount.setText("已拍张数: " + sessionCount);
+        }
     }
     
     private void updateUI(boolean running) {
         isRunning = running;
         btnStartStop.setText(running ? R.string.stop_capture : R.string.start_capture);
         tvStatus.setText(running ? R.string.status_running : R.string.status_stopped);
+        
+        // 更新计数器显示
+        updateCaptureCountDisplay();
         
         // 根据运行状态控制图标显示
         if (running) {
@@ -420,6 +572,8 @@ public class MainActivity extends AppCompatActivity {
             btnSelectCamera.setVisibility(View.VISIBLE);
             // 显示闪光灯设置按钮
             btnFlashToggle.setVisibility(View.VISIBLE);
+            // 显示计数器
+            tvCaptureCount.setVisibility(View.VISIBLE);
         } else {
             // 停止时显示图标容器
             appIconContainer.setVisibility(View.VISIBLE);
@@ -427,6 +581,8 @@ public class MainActivity extends AppCompatActivity {
             btnSelectCamera.setVisibility(View.GONE);
             // 隐藏闪光灯设置按钮
             btnFlashToggle.setVisibility(View.GONE);
+            // 隐藏计数器
+            tvCaptureCount.setVisibility(View.GONE);
         }
     }
     
@@ -436,6 +592,11 @@ public class MainActivity extends AppCompatActivity {
         appIconContainer.setVisibility(View.GONE); // 隐藏图标容器
         btnSelectCamera.setVisibility(View.VISIBLE); // 显示摄像头选择按钮
         btnFlashToggle.setVisibility(View.VISIBLE); // 显示闪光灯设置按钮
+        tvCaptureCount.setVisibility(View.VISIBLE); // 显示计数器
+        
+        // 显示TextureView并隐藏ImageView
+        textureView.setVisibility(View.VISIBLE);
+        ivCapturedImage.setVisibility(View.GONE);
         
         // 更新摄像头选择按钮文本
         if (cameraNames != null && cameraNames.length > currentCameraIndex) {
@@ -453,17 +614,44 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     
+    // 显示上次拍摄的照片
+    private void showLastCapturedImage(String photoPath) {
+        // 在相机关闭后显示最后拍摄的照片
+        if (!isPreviewShowing && photoPath != null && !photoPath.isEmpty()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // 隐藏TextureView并显示ImageView
+                    textureView.setVisibility(View.GONE);
+                    ivCapturedImage.setVisibility(View.VISIBLE);
+                    
+                    // 加载并显示图片
+                    Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
+                    if (bitmap != null) {
+                        ivCapturedImage.setImageBitmap(bitmap);
+                    }
+                }
+            });
+        }
+    }
+    
     private void hideCameraPreview() {
         cameraPreviewContainer.setVisibility(View.GONE);
         appIconContainer.setVisibility(View.VISIBLE); // 显示图标容器
         btnSelectCamera.setVisibility(View.GONE); // 隐藏摄像头选择按钮
         btnFlashToggle.setVisibility(View.GONE); // 隐藏闪光灯设置按钮
+        tvCaptureCount.setVisibility(View.GONE); // 隐藏计数器
         isPreviewShowing = false;
         closeCamera();
         stopBackgroundThread();
     }
     
     private void startBackgroundThread() {
+        // 如果后台线程已经存在，先停止它
+        if (backgroundThread != null) {
+            stopBackgroundThread();
+        }
+        
         backgroundThread = new HandlerThread("CameraBackground");
         backgroundThread.start();
         backgroundHandler = new Handler(backgroundThread.getLooper());
@@ -492,7 +680,11 @@ public class MainActivity extends AppCompatActivity {
         
         @Override
         public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
-            // 忽略
+            // 重新配置相机预览
+            if (isPreviewShowing && cameraDevice != null) {
+                closeCamera();
+                openCamera(width, height);
+            }
         }
         
         @Override
@@ -615,73 +807,67 @@ public class MainActivity extends AppCompatActivity {
     };
     
     private void createCameraPreview() {
-        // 确保在主线程中执行UI操作
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    SurfaceTexture texture = textureView.getSurfaceTexture();
-                    if (texture == null) {
-                        Log.e(TAG, "SurfaceTexture为空");
-                        return;
-                    }
-                    
-                    assert texture != null;
-                    texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-                    Surface surface = new Surface(texture);
-                    
-                    if (cameraDevice == null) {
-                        Log.e(TAG, "相机设备为空");
-                        return;
-                    }
-                    
-                    previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                    previewRequestBuilder.addTarget(surface);
-                    
-                    // 设置自动对焦
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    
-                    // 设置预览时的闪光灯状态
-                    if (isFlashEnabledForCapture) {
-                        previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
-                    }
-                    
-                    cameraDevice.createCaptureSession(Arrays.asList(surface),
-                            new CameraCaptureSession.StateCallback() {
-                                @Override
-                                public void onConfigured(@NonNull CameraCaptureSession session) {
-                                    if (cameraDevice == null) return;
-                                    
-                                    captureSession = session;
-                                    try {
-                                        captureSession.setRepeatingRequest(previewRequestBuilder.build(), null, backgroundHandler);
-                                    } catch (CameraAccessException e) {
-                                        Log.e(TAG, "配置预览失败", e);
-                                    }
-                                }
-                                
-                                @Override
-                                public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            Toast.makeText(MainActivity.this, "配置相机预览失败", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
-                                }
-                            }, backgroundHandler);
-                } catch (Exception e) {
-                    Log.e(TAG, "创建预览失败", e);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "创建预览失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
+        try {
+            SurfaceTexture texture = textureView.getSurfaceTexture();
+            if (texture == null) {
+                Log.e(TAG, "SurfaceTexture为空");
+                return;
             }
-        });
+            
+            assert texture != null;
+            texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
+            Surface surface = new Surface(texture);
+            
+            if (cameraDevice == null) {
+                Log.e(TAG, "相机设备为空");
+                return;
+            }
+            
+            previewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            previewRequestBuilder.addTarget(surface);
+            
+            // 设置自动对焦
+            previewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            
+            // 设置预览时的闪光灯状态
+            if (isFlashEnabledForCapture) {
+                previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
+            }
+            
+            cameraDevice.createCaptureSession(Arrays.asList(surface),
+                    new CameraCaptureSession.StateCallback() {
+                        @Override
+                        public void onConfigured(@NonNull CameraCaptureSession session) {
+                            if (cameraDevice == null) return;
+                            
+                            captureSession = session;
+                            try {
+                                captureSession.setRepeatingRequest(previewRequestBuilder.build(), null, backgroundHandler);
+                            } catch (CameraAccessException e) {
+                                Log.e(TAG, "配置预览失败", e);
+                            }
+                        }
+                        
+                        @Override
+                        public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "配置相机预览失败", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                    }, backgroundHandler);
+        } catch (Exception e) {
+            Log.e(TAG, "创建预览失败", e);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "创建预览失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
     
     private Size chooseOptimalSize(Size[] choices, int width, int height) {
@@ -730,14 +916,17 @@ public class MainActivity extends AppCompatActivity {
         if (isRunning) {
             showCameraPreview();
         }
+        
+        // 更新计数器显示
+        updateCaptureCountDisplay();
     }
     
     @Override
     protected void onPause() {
         super.onPause();
-        // 隐藏预览但不关闭相机，因为服务可能仍在运行
+        // 隐藏预览并关闭相机，确保资源正确释放
         if (isPreviewShowing) {
-            cameraPreviewContainer.setVisibility(View.GONE);
+            hideCameraPreview();
         }
     }
     
@@ -746,6 +935,14 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         closeCamera();
         stopBackgroundThread();
+        stopProgressUpdate(); // 确保停止进度更新
+        
+        // 释放电源锁
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+        
         unregisterReceiver(serviceStatusReceiver);
+        unregisterReceiver(captureCompletedReceiver); // 取消注册新的广播接收器
     }
 }

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -36,6 +37,7 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
     private Map<String, List<PhotoItem>> photosByDate; // 按日期分组的照片
     private boolean isSelectionMode = false; // 是否处于选择模式
     private MenuItem deleteMenuItem; // 删除菜单项
+    private MenuItem selectAllMenuItem; // 全选菜单项
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,8 +70,20 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         photoList = new ArrayList<>();
         photosByDate = new LinkedHashMap<>(); // 保持插入顺序
         photoAdapter = new PhotoAdapter(this, photoList, this);
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
+        recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(photoAdapter);
+        
+        // 设置RecyclerView的性能优化
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemViewCacheSize(20);
+        recyclerView.setDrawingCacheEnabled(true);
+        recyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_LOW);
+        
+        // 设置RecycledViewPool大小
+        RecyclerView.RecycledViewPool recycledViewPool = new RecyclerView.RecycledViewPool();
+        recycledViewPool.setMaxRecycledViews(0, 20); // 假设只有一种view type
+        recyclerView.setRecycledViewPool(recycledViewPool);
     }
     
     private void loadPhotos() {
@@ -82,10 +96,12 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         if (photoDir != null && photoDir.exists()) {
             File[] photoFiles = photoDir.listFiles();
             if (photoFiles != null) {
+                // 先收集所有照片信息
+                List<PhotoItem> tempPhotoList = new ArrayList<>();
                 for (File file : photoFiles) {
                     if (file.isFile() && file.getName().toLowerCase(Locale.ROOT).endsWith(".jpg")) {
                         PhotoItem photoItem = new PhotoItem(file.getAbsolutePath(), file.lastModified());
-                        photoList.add(photoItem);
+                        tempPhotoList.add(photoItem);
                         
                         // 按日期分组
                         String dateKey = getDateKey(file.lastModified());
@@ -95,15 +111,18 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
                         photosByDate.get(dateKey).add(photoItem);
                     }
                 }
+                
+                // 按拍摄时间倒序排列（最新的在前面）
+                Collections.sort(tempPhotoList, new Comparator<PhotoItem>() {
+                    @Override
+                    public int compare(PhotoItem p1, PhotoItem p2) {
+                        return Long.compare(p2.getTimestamp(), p1.getTimestamp());
+                    }
+                });
+                
+                // 批量添加到主列表
+                photoList.addAll(tempPhotoList);
             }
-            
-            // 按拍摄时间倒序排列（最新的在前面）
-            Collections.sort(photoList, new Comparator<PhotoItem>() {
-                @Override
-                public int compare(PhotoItem p1, PhotoItem p2) {
-                    return Long.compare(p2.getTimestamp(), p1.getTimestamp());
-                }
-            });
         }
         
         photoAdapter.notifyDataSetChanged();
@@ -147,6 +166,16 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
             deleteMenuItem.setTitle("删除 (" + selectedCount + ")");
         }
         
+        // 更新全选菜单项
+        if (selectAllMenuItem != null) {
+            selectAllMenuItem.setVisible(isSelectionMode);
+            if (photoAdapter.isAllSelected()) {
+                selectAllMenuItem.setTitle("取消全选");
+            } else {
+                selectAllMenuItem.setTitle("全选");
+            }
+        }
+        
         // 更新标题
         if (isSelectionMode) {
             getSupportActionBar().setTitle("选择照片 (" + selectedCount + ")");
@@ -168,6 +197,9 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         photoAdapter.setSelectionMode(false);
         if (deleteMenuItem != null) {
             deleteMenuItem.setVisible(false);
+        }
+        if (selectAllMenuItem != null) {
+            selectAllMenuItem.setVisible(false);
         }
         getSupportActionBar().setTitle("照片库");
     }
@@ -201,7 +233,9 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.gallery_menu, menu);
         deleteMenuItem = menu.findItem(R.id.action_delete);
+        selectAllMenuItem = menu.findItem(R.id.action_select_all);
         deleteMenuItem.setVisible(isSelectionMode);
+        selectAllMenuItem.setVisible(isSelectionMode);
         return true;
     }
     
@@ -213,6 +247,16 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
                     exitSelectionMode();
                 } else {
                     onBackPressed();
+                }
+                return true;
+            case R.id.action_select_all:
+                // 处理全选/取消全选
+                if (photoAdapter.isAllSelected()) {
+                    photoAdapter.deselectAll();
+                    item.setTitle("全选");
+                } else {
+                    photoAdapter.selectAll();
+                    item.setTitle("取消全选");
                 }
                 return true;
             case R.id.action_delete:
@@ -229,6 +273,15 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         // 返回时重新加载照片列表
         if (checkStoragePermission()) {
             loadPhotos();
+        }
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 清理图片缓存
+        if (photoAdapter != null) {
+            photoAdapter.clearImageCache();
         }
     }
     

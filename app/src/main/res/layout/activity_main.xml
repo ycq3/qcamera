@@ -34,10 +34,16 @@
             android:gravity="center"
             android:layout_gravity="center_vertical" />
 
-        <View
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_gravity="center_vertical" />
+        <!-- 计数器显示 -->
+        <TextView
+            android:id="@+id/tv_capture_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="已拍张数: 0"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone" />
 
     </LinearLayout>
 
@@ -54,6 +60,14 @@
             android:id="@+id/texture_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+            
+        <!-- 用于显示拍摄照片的ImageView -->
+        <ImageView
+            android:id="@+id/iv_captured_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:scaleType="centerCrop" />
             
         <!-- 闪光灯指示器 -->
         <ImageButton
@@ -107,7 +121,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <Button
+        <com.camera.app.ProgressButton
             android:id="@+id/btn_start_stop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
