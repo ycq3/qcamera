@@ -45,10 +45,14 @@ public class CustomCameraManager {
     private Handler backgroundHandler;
     private HandlerThread backgroundThread;
     private String cameraId;
-    private Size previewSize;
+    private Size previewSize; // 实际使用的预览尺寸
+    private Size captureSize; // 实际使用的拍照尺寸
+    private String[] cameraIds; // 存储所有摄像头ID
     
     private CaptureCallback captureCallback;
     private boolean isCameraOpened = false;
+    private int selectedCameraIndex = 0; // 默认选择第一个摄像头
+    private boolean isFlashEnabled = false; // 闪光灯设置
     
     public interface CaptureCallback {
         void onCaptureSuccess(String imagePath);
@@ -61,6 +65,48 @@ public class CustomCameraManager {
     
     public void setCaptureCallback(CaptureCallback callback) {
         this.captureCallback = callback;
+    }
+    
+    // 设置选择的摄像头索引
+    public void setSelectedCameraIndex(int index) {
+        this.selectedCameraIndex = index;
+    }
+    
+    // 设置闪光灯状态
+    public void setFlashEnabled(boolean enabled) {
+        this.isFlashEnabled = enabled;
+    }
+    
+    // 获取闪光灯状态
+    public boolean isFlashEnabled() {
+        return this.isFlashEnabled;
+    }
+    
+    // 获取所有可用的摄像头ID
+    public String[] getAvailableCameraIds() throws CameraAccessException {
+        CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        return manager.getCameraIdList();
+    }
+    
+    // 获取摄像头方向信息
+    public int getCameraOrientation(String cameraId) throws CameraAccessException {
+        CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+        return characteristics.get(CameraCharacteristics.LENS_FACING);
+    }
+    
+    // 获取摄像头支持的最大分辨率
+    public Size getMaxResolution(String cameraId) throws CameraAccessException {
+        CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+        StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        
+        if (map != null) {
+            Size[] sizes = map.getOutputSizes(ImageFormat.JPEG);
+            // 按面积排序，获取最大分辨率
+            return Collections.max(Arrays.asList(sizes), new CompareSizesByArea());
+        }
+        return new Size(1920, 1080); // 默认分辨率
     }
     
     public boolean isCameraOpened() {
@@ -90,22 +136,36 @@ public class CustomCameraManager {
         isCameraOpened = false;
         CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         try {
-            cameraId = manager.getCameraIdList()[0]; // 使用后置摄像头
+            // 获取所有摄像头ID
+            cameraIds = manager.getCameraIdList();
+            
+            // 检查选中的摄像头索引是否有效
+            if (selectedCameraIndex >= cameraIds.length) {
+                selectedCameraIndex = 0; // 回退到默认摄像头
+            }
+            
+            cameraId = cameraIds[selectedCameraIndex]; // 使用选中的摄像头
             Log.d(TAG, "尝试打开相机 ID: " + cameraId);
             
-            // 选择合适的预览尺寸
+            // 获取摄像头支持的最大分辨率
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             
             if (map != null) {
-                Size[] sizes = map.getOutputSizes(ImageFormat.JPEG);
-                previewSize = chooseOptimalSize(sizes, 1920, 1080); // 默认使用1080p
+                // 获取预览支持的尺寸
+                Size[] previewSizes = map.getOutputSizes(SurfaceTexture.class);
+                previewSize = chooseOptimalPreviewSize(previewSizes, 1920, 1080);
                 Log.d(TAG, "选择预览尺寸: " + previewSize.getWidth() + "x" + previewSize.getHeight());
                 
-                // 初始化ImageReader
+                // 获取拍照支持的最大尺寸
+                Size[] captureSizes = map.getOutputSizes(ImageFormat.JPEG);
+                captureSize = Collections.max(Arrays.asList(captureSizes), new CompareSizesByArea());
+                Log.d(TAG, "选择拍照尺寸: " + captureSize.getWidth() + "x" + captureSize.getHeight());
+                
+                // 初始化ImageReader，使用拍照的最大分辨率
                 imageReader = ImageReader.newInstance(
-                        previewSize.getWidth(), 
-                        previewSize.getHeight(),
+                        captureSize.getWidth(), 
+                        captureSize.getHeight(),
                         ImageFormat.JPEG, 
                         2);
                 imageReader.setOnImageAvailableListener(onImageAvailableListener, backgroundHandler);
@@ -153,6 +213,13 @@ public class CustomCameraManager {
             
             // 设置自动对焦
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            
+            // 设置闪光灯状态
+            if (isFlashEnabled) {
+                captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
+            } else {
+                captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
+            }
             
             // 方向
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
@@ -226,6 +293,11 @@ public class CustomCameraManager {
             
             final CaptureRequest.Builder previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             previewBuilder.addTarget(surface);
+            
+            // 设置预览时的闪光灯状态（仅在需要持续闪光时使用）
+            if (isFlashEnabled) {
+                previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
+            }
             
             cameraDevice.createCaptureSession(Arrays.asList(surface, imageReader.getSurface()),
                     new CameraCaptureSession.StateCallback() {
@@ -313,7 +385,8 @@ public class CustomCameraManager {
         return new File(storageDir, imageFileName);
     }
     
-    private Size chooseOptimalSize(Size[] choices, int width, int height) {
+    // 选择最优预览尺寸
+    private Size chooseOptimalPreviewSize(Size[] choices, int width, int height) {
         List<Size> bigEnough = new ArrayList<>();
         for (Size option : choices) {
             if (option.getHeight() == option.getWidth() * height / width &&

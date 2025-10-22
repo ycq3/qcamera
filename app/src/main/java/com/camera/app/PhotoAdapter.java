@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -22,16 +24,20 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     
     private Context context;
     private List<PhotoItem> photoList;
+    private List<PhotoItem> selectedPhotos; // 选中的照片列表
     private OnPhotoClickListener listener;
+    private boolean isSelectionMode = false; // 是否处于选择模式
     
     public interface OnPhotoClickListener {
         void onPhotoClick(int position);
         void onPhotoLongClick(int position);
+        void onSelectionChanged(int selectedCount); // 选择数量变化回调
     }
     
     public PhotoAdapter(Context context, List<PhotoItem> photoList, OnPhotoClickListener listener) {
         this.context = context;
         this.photoList = photoList;
+        this.selectedPhotos = new ArrayList<>();
         this.listener = listener;
     }
     
@@ -59,12 +65,22 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         String timeStr = sdf.format(new Date(photoItem.getTimestamp()));
         holder.textView.setText(timeStr);
         
+        // 设置选择状态
+        holder.checkBox.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
+        holder.checkBox.setChecked(selectedPhotos.contains(photoItem));
+        
         // 设置点击事件
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (listener != null) {
-                    listener.onPhotoClick(holder.getAdapterPosition());
+                if (isSelectionMode) {
+                    // 选择模式下，切换选中状态
+                    toggleSelection(photoItem, holder.getAdapterPosition());
+                } else {
+                    // 正常模式下，打开照片
+                    if (listener != null) {
+                        listener.onPhotoClick(holder.getAdapterPosition());
+                    }
                 }
             }
         });
@@ -73,11 +89,21 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
         holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                if (listener != null) {
-                    listener.onPhotoLongClick(holder.getAdapterPosition());
+                if (!isSelectionMode) {
+                    // 进入选择模式
+                    setSelectionMode(true);
+                    toggleSelection(photoItem, holder.getAdapterPosition());
                     return true;
                 }
                 return false;
+            }
+        });
+        
+        // CheckBox点击事件
+        holder.checkBox.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleSelection(photoItem, holder.getAdapterPosition());
             }
         });
     }
@@ -85,6 +111,70 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     @Override
     public int getItemCount() {
         return photoList.size();
+    }
+    
+    // 切换照片选中状态
+    private void toggleSelection(PhotoItem photoItem, int position) {
+        if (selectedPhotos.contains(photoItem)) {
+            selectedPhotos.remove(photoItem);
+        } else {
+            selectedPhotos.add(photoItem);
+        }
+        
+        notifyItemChanged(position);
+        
+        if (listener != null) {
+            listener.onSelectionChanged(selectedPhotos.size());
+        }
+        
+        // 如果没有选中的照片，退出选择模式
+        if (selectedPhotos.isEmpty()) {
+            setSelectionMode(false);
+        }
+    }
+    
+    // 设置选择模式
+    public void setSelectionMode(boolean selectionMode) {
+        isSelectionMode = selectionMode;
+        notifyDataSetChanged();
+        
+        if (!selectionMode) {
+            selectedPhotos.clear();
+            if (listener != null) {
+                listener.onSelectionChanged(0);
+            }
+        }
+    }
+    
+    // 获取选中的照片路径列表
+    public List<String> getSelectedPhotoPaths() {
+        List<String> paths = new ArrayList<>();
+        for (PhotoItem item : selectedPhotos) {
+            paths.add(item.getPath());
+        }
+        return paths;
+    }
+    
+    // 删除选中的照片
+    public void deleteSelectedPhotos() {
+        for (PhotoItem item : selectedPhotos) {
+            // 删除文件
+            File file = new File(item.getPath());
+            if (file.exists()) {
+                file.delete();
+            }
+            // 从列表中移除
+            photoList.remove(item);
+        }
+        
+        // 清空选中列表
+        selectedPhotos.clear();
+        
+        // 退出选择模式
+        setSelectionMode(false);
+        
+        // 通知数据改变
+        notifyDataSetChanged();
     }
     
     private Bitmap createThumbnail(String imagePath) {
@@ -116,11 +206,13 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     static class PhotoViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         TextView textView;
+        CheckBox checkBox;
         
         PhotoViewHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.image_view);
             textView = itemView.findViewById(R.id.text_view);
+            checkBox = itemView.findViewById(R.id.checkbox);
         }
     }
 }

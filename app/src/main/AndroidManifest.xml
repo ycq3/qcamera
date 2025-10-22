@@ -41,7 +41,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.CameraApp">
+            android:theme="@style/Theme.CameraApp.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -68,14 +68,6 @@
             android:exported="false"
             android:label="查看照片"
             android:theme="@style/Theme.CameraApp" />
-        
-        <!-- 相机活动 -->
-        <activity
-            android:name=".CameraActivity"
-            android:exported="false"
-            android:label="相机"
-            android:theme="@style/Theme.CameraApp"
-            android:screenOrientation="portrait" />
         
         <!-- 拍照服务 -->
         <service

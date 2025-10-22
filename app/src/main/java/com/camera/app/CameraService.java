@@ -27,6 +27,8 @@ public class CameraService extends Service {
     private Handler handler;
     private Runnable captureRunnable;
     private boolean isCapturing = false;
+    private int cameraIndex = 0; // 摄像头索引
+    private boolean isFlashEnabled = false; // 闪光灯设置
     
     @Override
     public void onCreate() {
@@ -40,6 +42,9 @@ public class CameraService extends Service {
         if (intent != null) {
             String action = intent.getAction();
             if (ACTION_START_CAPTURE.equals(action)) {
+                // 获取摄像头索引和闪光灯设置
+                cameraIndex = intent.getIntExtra("cameraIndex", 0);
+                isFlashEnabled = intent.getBooleanExtra("flashEnabled", false);
                 startCapture();
             } else if (ACTION_STOP_CAPTURE.equals(action)) {
                 stopCapture();
@@ -62,6 +67,11 @@ public class CameraService extends Service {
         isCapturing = true;
         Log.d(TAG, "开始拍照服务");
         
+        // 发送广播通知MainActivity服务已启动
+        Intent statusIntent = new Intent("com.camera.app.SERVICE_STATUS");
+        statusIntent.putExtra("isRunning", true);
+        sendBroadcast(statusIntent);
+        
         // 创建并启动周期性拍照任务
         createCaptureTask();
         
@@ -72,6 +82,11 @@ public class CameraService extends Service {
     private void stopCapture() {
         Log.d(TAG, "停止拍照服务");
         isCapturing = false;
+        
+        // 发送广播通知MainActivity服务已停止
+        Intent statusIntent = new Intent("com.camera.app.SERVICE_STATUS");
+        statusIntent.putExtra("isRunning", false);
+        sendBroadcast(statusIntent);
         
         // 取消定时任务
         if (handler != null && captureRunnable != null) {
@@ -119,6 +134,11 @@ public class CameraService extends Service {
                     SettingsManager settingsManager = new SettingsManager(CameraService.this);
                     StorageManager storageManager = new StorageManager(CameraService.this);
                     EmailManager emailManager = new EmailManager(CameraService.this);
+                    
+                    // 设置摄像头索引
+                    cameraManager.setSelectedCameraIndex(cameraIndex);
+                    // 设置闪光灯状态
+                    cameraManager.setFlashEnabled(isFlashEnabled);
                     
                     // 启动后台线程
                     cameraManager.startBackgroundThread();
