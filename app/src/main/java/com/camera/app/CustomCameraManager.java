@@ -1,6 +1,8 @@
 package com.camera.app;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -60,6 +62,9 @@ public class CustomCameraManager {
     
     // 添加拍照状态标志
     private boolean isCapturing = false;
+    
+    // 添加预览显示回调接口
+    private PreviewDisplayCallback previewDisplayCallback;
     
     public interface CaptureCallback {
         void onCaptureSuccess(String imagePath);
@@ -255,13 +260,16 @@ public class CustomCameraManager {
             
             // 设置自动对焦
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             
-            // 设置闪光灯状态
+            // 设置闪光灯状态 - 修复闪光灯问题
             if (isFlashEnabled) {
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
+                captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
                 Log.d(TAG, "设置拍照闪光灯模式为: FLASH_MODE_SINGLE");
             } else {
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
+                captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                 Log.d(TAG, "设置拍照闪光灯模式为: FLASH_MODE_OFF");
             }
             
@@ -514,6 +522,12 @@ public class CustomCameraManager {
                 output.write(bytes);
                 Log.d(TAG, "图片保存成功");
                 
+                // 将图片转换为Bitmap并传递给预览显示回调
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                if (previewDisplayCallback != null) {
+                    previewDisplayCallback.onPreviewDisplay(bitmap);
+                }
+                
                 // 通知回调拍照成功
                 if (captureCallback != null) {
                     captureCallback.onCaptureSuccess(file.getAbsolutePath());
@@ -573,5 +587,15 @@ public class CustomCameraManager {
             return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
                     (long) rhs.getWidth() * rhs.getHeight());
         }
+    }
+    
+    // 设置预览显示回调
+    public void setPreviewDisplayCallback(PreviewDisplayCallback callback) {
+        this.previewDisplayCallback = callback;
+    }
+    
+    // 预览显示回调接口
+    public interface PreviewDisplayCallback {
+        void onPreviewDisplay(Bitmap bitmap);
     }
 }

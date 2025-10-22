@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -184,6 +185,15 @@ public class CameraService extends Service {
                     
                     // 设置TextureView（虽然在服务中不直接使用，但保持接口一致性）
                     cameraManager.setTextureView(null);
+                    
+                    // 设置预览显示回调（在服务中不需要显示预览）
+                    cameraManager.setPreviewDisplayCallback(new CustomCameraManager.PreviewDisplayCallback() {
+                        @Override
+                        public void onPreviewDisplay(Bitmap bitmap) {
+                            // 在服务中不需要显示预览，但可以发送广播通知
+                            Log.d(TAG, "拍照完成，图片已生成");
+                        }
+                    });
                     
                     // 启动后台线程
                     cameraManager.startBackgroundThread();

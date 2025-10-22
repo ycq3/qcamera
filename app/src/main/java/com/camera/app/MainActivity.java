@@ -80,6 +80,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFlashEnabledForCapture = false; // 用于拍照时的闪光灯设置
     private boolean isPreviewShowing = false;
     
+    // 自定义相机管理器
+    private CustomCameraManager customCameraManager;
+    
     // 进度条相关
     private Handler progressHandler = new Handler();
     private Runnable progressRunnable;
@@ -642,6 +645,15 @@ public class MainActivity extends AppCompatActivity {
         btnFlashToggle.setVisibility(View.GONE); // 隐藏闪光灯设置按钮
         tvCaptureCount.setVisibility(View.GONE); // 隐藏计数器
         isPreviewShowing = false;
+        
+        // 关闭自定义相机管理器
+        if (customCameraManager != null) {
+            customCameraManager.closeCamera();
+            customCameraManager.stopBackgroundThread();
+            customCameraManager = null;
+        }
+        
+        // 原有的关闭相机方法
         closeCamera();
         stopBackgroundThread();
     }
@@ -708,62 +720,48 @@ public class MainActivity extends AppCompatActivity {
         backgroundHandler.post(new Runnable() {
             @Override
             public void run() {
-                CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-                try {
-                    // 获取所有摄像头ID
-                    if (cameraIds == null || cameraIds.length == 0) {
-                        initializeCameras();
-                    }
+                // 使用自定义相机管理器
+                if (customCameraManager == null) {
+                    customCameraManager = new CustomCameraManager(MainActivity.this);
+                    customCameraManager.setTextureView(textureView);
+                    customCameraManager.setSelectedCameraIndex(currentCameraIndex);
+                    customCameraManager.setFlashEnabled(isFlashEnabledForCapture);
                     
-                    // 检查选中的摄像头索引是否有效
-                    if (currentCameraIndex >= cameraIds.length) {
-                        currentCameraIndex = 0; // 回退到默认摄像头
-                    }
-                    
-                    cameraId = cameraIds[currentCameraIndex]; // 使用选中的摄像头
-                    Log.d(TAG, "尝试打开相机 ID: " + cameraId);
-                    
-                    // 选择合适的预览尺寸
-                    CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-                    StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                    if (map != null) {
-                        Size[] sizes = map.getOutputSizes(SurfaceTexture.class);
-                        // 获取最大分辨率作为预览尺寸
-                        previewSize = getMaxResolution(cameraId);
-                    }
-                    
-                    // 打开相机
-                    if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                        Log.e(TAG, "缺少相机权限");
-                        return;
-                    }
-                    
-                    // 确保在主线程中更新UI
-                    runOnUiThread(new Runnable() {
+                    // 设置预览显示回调
+                    customCameraManager.setPreviewDisplayCallback(new CustomCameraManager.PreviewDisplayCallback() {
                         @Override
-                        public void run() {
-                            try {
-                                manager.openCamera(cameraId, stateCallback, backgroundHandler);
-                            } catch (CameraAccessException e) {
-                                Log.e(TAG, "无法访问相机", e);
-                                Toast.makeText(MainActivity.this, "无法访问相机: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            } catch (Exception e) {
-                                Log.e(TAG, "打开相机时发生未知错误", e);
-                                Toast.makeText(MainActivity.this, "打开相机失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-                } catch (Exception e) {
-                    Log.e(TAG, "初始化相机时发生错误", e);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "初始化相机失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        public void onPreviewDisplay(Bitmap bitmap) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    // 显示拍摄的照片
+                                    showCapturedImage(bitmap);
+                                }
+                            });
                         }
                     });
                 }
+                
+                customCameraManager.startBackgroundThread();
+                customCameraManager.openCamera();
             }
         });
+    }
+    
+    // 显示拍摄的照片
+    private void showCapturedImage(Bitmap bitmap) {
+        if (bitmap != null && ivCapturedImage != null) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // 隐藏TextureView并显示ImageView
+                    textureView.setVisibility(View.GONE);
+                    ivCapturedImage.setVisibility(View.VISIBLE);
+                    ivCapturedImage.setImageBitmap(bitmap);
+                    Log.d(TAG, "显示拍摄的照片");
+                }
+            });
+        }
     }
     
     // 获取摄像头支持的最大分辨率
