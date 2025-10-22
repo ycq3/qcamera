@@ -19,6 +19,7 @@ out/
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -160,10 +161,6 @@ $RECYCLE.BIN/
 */.settings/
 */.externalToolBuilders/
 
-# Gradle wrapper
-!gradle/wrapper/gradle-wrapper.properties
-gradle/wrapper/gradle-wrapper.jar
-
 # Maven
 */target/
 */pom.xml.tag
@@ -190,17 +187,33 @@ gradle/wrapper/gradle-wrapper.jar
 */app/build/
 */app/release/
 */app/debug/
+*/app/outputs/
 
 # Temporary files
 *.tmp
 *.temp
 *.swp
 *.lock
-.DS_Store
-.DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
 Icon?
 ehthumbs.db
 Thumbs.db
+
+# Additional build artifacts
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# Crashlytics
+com_crashlytics_export_strings.xml
+
+# lint output
+lint/
+*/lint-report.xml
+
+# Android Profiling
+*.hprof
