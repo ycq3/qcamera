@@ -1,0 +1,4 @@
+#Tue Oct 21 01:53:09 CST 2025
+base.0=/Users/pipiqiang/code/camera/app/build/intermediates/dex/release/mergeDexRelease/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

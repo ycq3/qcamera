@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 7.2.1" type="incidents">
+
+    <incident
+        id="ContentDescription"
+        severity="warning"
+        message="Missing `contentDescription` attribute on image">
+        <fix-attribute
+            description="Set contentDescription"
+            namespace="http://schemas.android.com/apk/res/android"
+            attribute="contentDescription"
+            value="TODO"
+            dot="4"
+            mark="0"/>
+        <location
+            file="${:app*debug*sourceProvider*0*resDir*0}/layout/activity_main.xml"
+            line="20"
+            column="6"
+            startOffset="691"
+            endLine="20"
+            endColumn="15"
+            endOffset="700"/>
+    </incident>
+
+    <incident
+        id="HardcodedText"
+        severity="warning"
+        message="Hardcoded string &quot;测试存储&quot;, should use `@string` resource">
+        <location
+            file="${:app*debug*sourceProvider*0*resDir*0}/layout/activity_main.xml"
+            line="61"
+            column="9"
+            startOffset="2070"
+            endLine="61"
+            endColumn="28"
+            endOffset="2089"/>
+    </incident>
+
+    <incident
+        id="ContentDescription"
+        severity="warning"
+        message="Missing `contentDescription` attribute on image">
+        <fix-attribute
+            description="Set contentDescription"
+            namespace="http://schemas.android.com/apk/res/android"
+            attribute="contentDescription"
+            value="TODO"
+            dot="4"
+            mark="0"/>
+        <location
+            file="${:app*debug*sourceProvider*0*resDir*0}/layout/activity_photo_viewer.xml"
+            line="13"
+            column="10"
+            startOffset="415"
+            endLine="13"
+            endColumn="19"
+            endOffset="424"/>
+    </incident>
+
+    <incident
+        id="ContentDescription"
+        severity="warning"
+        message="Missing `contentDescription` attribute on image">
+        <fix-attribute
+            description="Set contentDescription"
+            namespace="http://schemas.android.com/apk/res/android"
+            attribute="contentDescription"
+            value="TODO"
+            dot="4"
+            mark="0"/>
+        <location
+            file="${:app*debug*sourceProvider*0*resDir*0}/layout/item_photo.xml"
+            line="8"
+            column="6"
+            startOffset="261"
+            endLine="8"
+            endColumn="15"
+            endOffset="270"/>
+    </incident>
+
+    <incident
+        id="BadPeriodicWorkRequestEnqueue"
+        severity="warning"
+        message="Use `enqueueUniquePeriodicWork()` instead of `enqueue()`">
+        <location
+            file="/Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/jars/classes.jar!/androidx/work/WorkManager.class"/>
+    </incident>
+
+    <incident
+        id="Recycle"
+        severity="warning"
+        message="This `SurfaceTexture` should be freed up after use with `#release()`">
+        <location
+            file="${:app*debug*sourceProvider*0*javaDir*0}/com/camera/app/CustomCameraManager.java"
+            line="192"
+            column="38"
+            startOffset="6764"
+            endLine="192"
+            endColumn="59"
+            endOffset="6785"/>
+    </incident>
+
+    <incident
+        id="DefaultLocale"
+        severity="warning"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`.">
+        <location
+            file="${:app*debug*sourceProvider*0*javaDir*0}/com/camera/app/PhotoGalleryActivity.java"
+            line="75"
+            column="57"
+            startOffset="2502"
+            endLine="75"
+            endColumn="68"
+            endOffset="2513"/>
+    </incident>
+
+    <incident
+        id="NotifyDataSetChanged"
+        severity="warning"
+        message="It will always be more efficient to use more specific change events if you can. Rely on `notifyDataSetChanged` as a last resort.">
+        <location
+            file="${:app*debug*sourceProvider*0*javaDir*0}/com/camera/app/PhotoGalleryActivity.java"
+            line="90"
+            column="9"
+            startOffset="3036"
+            endLine="90"
+            endColumn="44"
+            endOffset="3071"/>
+    </incident>
+
+    <incident
+        id="DefaultLocale"
+        severity="warning"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`.">
+        <location
+            file="${:app*debug*sourceProvider*0*javaDir*0}/com/camera/app/StorageManager.java"
+            line="74"
+            column="60"
+            startOffset="2074"
+            endLine="74"
+            endColumn="71"
+            endOffset="2085"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.appcompat:appcompat than 1.5.1 is available: 1.7.1">
+        <fix-replace
+            description="Change to 1.7.1"
+            family="Update versions"
+            oldString="1.5.1"
+            replacement="1.7.1"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="48"
+            column="20"
+            startOffset="1032"
+            endLine="48"
+            endColumn="56"
+            endOffset="1068"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of com.google.android.material:material than 1.7.0 is available: 1.13.0">
+        <fix-replace
+            description="Change to 1.13.0"
+            family="Update versions"
+            oldString="1.7.0"
+            replacement="1.13.0"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="49"
+            column="20"
+            startOffset="1088"
+            endLine="49"
+            endColumn="64"
+            endOffset="1132"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.constraintlayout:constraintlayout than 2.1.4 is available: 2.2.1">
+        <fix-replace
+            description="Change to 2.2.1"
+            family="Update versions"
+            oldString="2.1.4"
+            replacement="2.2.1"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="50"
+            column="20"
+            startOffset="1152"
+            endLine="50"
+            endColumn="70"
+            endOffset="1202"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.preference:preference than 1.2.0 is available: 1.2.1">
+        <fix-replace
+            description="Change to 1.2.1"
+            family="Update versions"
+            oldString="1.2.0"
+            replacement="1.2.1"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="51"
+            column="20"
+            startOffset="1222"
+            endLine="51"
+            endColumn="58"
+            endOffset="1260"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.work:work-runtime than 2.7.1 is available: 2.10.5">
+        <fix-replace
+            description="Change to 2.10.5"
+            family="Update versions"
+            oldString="2.7.1"
+            replacement="2.10.5"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="52"
+            column="20"
+            startOffset="1280"
+            endLine="52"
+            endColumn="54"
+            endOffset="1314"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-viewmodel than 2.5.1 is available: 2.9.4">
+        <fix-replace
+            description="Change to 2.9.4"
+            family="Update versions"
+            oldString="2.5.1"
+            replacement="2.9.4"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="57"
+            column="20"
+            startOffset="1453"
+            endLine="57"
+            endColumn="66"
+            endOffset="1499"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-viewmodel-ktx than 2.5.1 is available: 2.9.4">
+        <fix-replace
+            description="Change to 2.9.4"
+            family="Update versions"
+            oldString="2.5.1"
+            replacement="2.9.4"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="58"
+            column="20"
+            startOffset="1519"
+            endLine="58"
+            endColumn="70"
+            endOffset="1569"/>
+    </incident>
+
+</incidents>

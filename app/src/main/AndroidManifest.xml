@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 相机权限 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 写入存储权限 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- 读取存储权限 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- 后台运行权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- 网络权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 唤醒锁权限（用于锁屏状态下运行） -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 开机启动权限 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    <!-- 声明使用相机功能 -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <!-- 声明需要自动对焦功能 -->
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CameraApp"
+        tools:targetApi="31">
+        
+        <!-- 主活动 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.CameraApp">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+        <!-- 设置活动 -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings"
+            android:theme="@style/Theme.CameraApp" />
+        
+        <!-- 照片库活动 -->
+        <activity
+            android:name=".PhotoGalleryActivity"
+            android:exported="false"
+            android:label="照片库"
+            android:theme="@style/Theme.CameraApp" />
+            
+        <!-- 照片查看器活动 -->
+        <activity
+            android:name=".PhotoViewerActivity"
+            android:exported="false"
+            android:label="查看照片"
+            android:theme="@style/Theme.CameraApp" />
+        
+        <!-- 拍照服务 -->
+        <service
+            android:name=".CameraService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
+            
+        <!-- 照片处理服务 -->
+        <service
+            android:name=".PhotoProcessingService"
+            android:enabled="true"
+            android:exported="false" />
+            
+        <!-- 开机广播接收器 -->
+        <receiver android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+            
+    </application>
+
+</manifest>

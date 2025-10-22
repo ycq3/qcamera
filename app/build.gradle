@@ -1,0 +1,59 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.camera.app'
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.camera.app"
+        minSdk 24
+        targetSdk 32
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        viewBinding true
+    }
+    
+    // 禁用Lint检查
+    lint {
+        abortOnError false
+    }
+    
+    // 解决依赖冲突问题
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.lifecycle:lifecycle-viewmodel:2.5.1'
+            force 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.preference:preference:1.2.0'
+    implementation 'androidx.work:work-runtime:2.7.1'
+    // 添加RecyclerView依赖
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    
+    // 显式指定lifecycle版本以避免冲突
+    implementation 'androidx.lifecycle:lifecycle-viewmodel:2.5.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
+}

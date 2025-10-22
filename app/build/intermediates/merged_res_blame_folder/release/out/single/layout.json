@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-mergeReleaseResources-33:/layout/item_photo.xml",
+        "source": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-main-35:/layout/item_photo.xml"
+    },
+    {
+        "merged": "com.camera.app-mergeReleaseResources-33:/layout/activity_main.xml",
+        "source": "com.camera.app-main-35:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-mergeReleaseResources-33:/layout/activity_photo_gallery.xml",
+        "source": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-main-35:/layout/activity_photo_gallery.xml"
+    },
+    {
+        "merged": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-mergeReleaseResources-33:/layout/activity_main.xml",
+        "source": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-main-35:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-mergeReleaseResources-33:/layout/activity_photo_viewer.xml",
+        "source": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-main-35:/layout/activity_photo_viewer.xml"
+    },
+    {
+        "merged": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-mergeReleaseResources-33:/layout/settings_activity.xml",
+        "source": "/Users/pipiqiang/.gradle/daemon/7.6.6/com.camera.app-main-35:/layout/settings_activity.xml"
+    }
+]

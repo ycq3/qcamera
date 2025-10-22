@@ -1,0 +1,70 @@
+<resources>
+    <string name="app_name">定时拍照助手</string>
+    <string name="title_activity_settings">设置</string>
+    
+    <!-- 首页相关 -->
+    <string name="start_capture">开始拍照</string>
+    <string name="stop_capture">停止拍照</string>
+    <string name="settings">设置</string>
+    <string name="photo_gallery">照片库</string>
+    <string name="status_running">正在运行中…</string>
+    <string name="status_stopped">已停止</string>
+    
+    <!-- 设置页面相关 -->
+    <string name="pref_header_camera">相机设置</string>
+    <string name="pref_title_resolution">照片分辨率</string>
+    <string name="pref_title_quality">照片质量</string>
+    
+    <string name="pref_header_capture">拍摄设置</string>
+    <string name="pref_title_interval">拍摄间隔(秒)</string>
+    <string name="pref_title_stop_condition">停止条件</string>
+    <string name="pref_title_stop_time">停止时间</string>
+    <string name="pref_title_stop_count">停止张数</string>
+    
+    <string name="pref_header_storage">存储设置</string>
+    <string name="pref_title_auto_clean">自动清理旧照片</string>
+    <string name="pref_title_min_space">最小剩余空间(MB)</string>
+    
+    <string name="pref_header_email">邮件设置</string>
+    <string name="pref_title_send_email">发送到邮箱</string>
+    <string name="pref_title_email_address">邮箱地址</string>
+    
+    <!-- 停止条件选项 -->
+    <string-array name="stop_condition_entries">
+        <item>按时间停止</item>
+        <item>按数量停止</item>
+        <item>不自动停止</item>
+    </string-array>
+    
+    <string-array name="stop_condition_values">
+        <item>time</item>
+        <item>count</item>
+        <item>never</item>
+    </string-array>
+    
+    <!-- 分辨率选项 -->
+    <string-array name="resolution_entries">
+        <item>1920x1080 (全高清)</item>
+        <item>1280x720 (高清)</item>
+        <item>640x480 (标清)</item>
+    </string-array>
+    
+    <string-array name="resolution_values">
+        <item>1920x1080</item>
+        <item>1280x720</item>
+        <item>640x480</item>
+    </string-array>
+    
+    <!-- 质量选项 -->
+    <string-array name="quality_entries">
+        <item>高 (90%)</item>
+        <item>中 (75%)</item>
+        <item>低 (50%)</item>
+    </string-array>
+    
+    <string-array name="quality_values">
+        <item>90</item>
+        <item>75</item>
+        <item>50</item>
+    </string-array>
+</resources>

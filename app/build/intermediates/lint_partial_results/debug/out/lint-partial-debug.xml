@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 7.2.1" type="partial_results">
+    <map id="UnusedResources">
+        <location id="R.color.purple_200"
+            file="${:app*debug*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="3"
+            column="12"
+            startOffset="62"
+            endLine="3"
+            endColumn="29"
+            endOffset="79"/>
+        <entry
+            name="model"
+            string="array[resolution_entries(U),stop_condition_values(U),resolution_values(U),quality_values(U),stop_condition_entries(U),quality_entries(U)],attr[colorControlNormal(R),colorPrimaryVariant(R)],color[purple_200(D),black(U),teal_200(U),white(U),teal_700(U),purple_700(U),purple_500(U)],drawable[ic_camera(U),ic_launcher_foreground(U),status_background(U),ic_launcher_background(U)],id[settings(U),tv_status(U),image_view(U),btn_start_stop(U),btn_gallery(U),btn_test_storage(U),recycler_view(U),btn_settings(U),text_view(U)],layout[settings_activity(U),item_photo(U),activity_main(U),activity_photo_gallery(U),activity_photo_viewer(U)],mipmap[ic_launcher_round(U),ic_launcher(U)],string[settings(U),pref_title_stop_time(U),title_activity_settings(U),pref_header_email(U),pref_header_capture(U),pref_title_stop_condition(U),pref_title_stop_count(U),pref_title_quality(U),status_running(U),pref_header_camera(U),pref_title_interval(U),app_name(U),start_capture(U),pref_header_storage(U),photo_gallery(U),pref_title_auto_clean(U),pref_title_send_email(U),pref_title_min_space(U),pref_title_email_address(U),pref_title_resolution(U),status_stopped(U),stop_capture(U)],style[Theme_MaterialComponents_DayNight_DarkActionBar(R),Theme_CameraApp(U)],xml[data_extraction_rules(U),root_preferences(U),backup_rules(U)];f^6,1e^2e^f^e^11^37^2f^31^23,21^12^10,22^12^10,3a^39^e^d^b^a^c^9^7,3c^2c^0^2^36^5^3^2a^27^2d^4^1^28^24^29^30^32^34^26^33^35;;;"/>
+    </map>
+
+</incidents>

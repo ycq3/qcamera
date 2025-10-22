@@ -1,0 +1,411 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.camera.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+8-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml
+9        android:targetSdkVersion="32" />
+9-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml
+10
+11    <!-- 相机权限 -->
+12    <uses-permission android:name="android.permission.CAMERA" />
+12-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:6:5-65
+12-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:6:22-62
+13    <!-- 写入存储权限 -->
+14    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+14-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:8:5-81
+14-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:8:22-78
+15    <!-- 读取存储权限 -->
+16    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+16-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:10:5-80
+16-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:10:22-77
+17    <!-- 后台运行权限 -->
+18    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+18-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:12:5-77
+18-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:12:22-74
+19    <!-- 网络权限 -->
+20    <uses-permission android:name="android.permission.INTERNET" />
+20-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:14:5-67
+20-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:14:22-64
+21    <!-- 唤醒锁权限（用于锁屏状态下运行） -->
+22    <uses-permission android:name="android.permission.WAKE_LOCK" />
+22-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:16:5-68
+22-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:16:22-65
+23    <!-- 开机启动权限 -->
+24    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+24-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:18:5-81
+24-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:18:22-78
+25
+26    <!-- 声明使用相机功能 -->
+27    <uses-feature
+27-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:21:5-84
+28        android:name="android.hardware.camera"
+28-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:21:19-57
+29        android:required="true" />
+29-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:21:58-81
+30    <!-- 声明需要自动对焦功能 -->
+31    <uses-feature
+31-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:23:5-95
+32        android:name="android.hardware.camera.autofocus"
+32-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:23:19-67
+33        android:required="false" />
+33-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:23:68-92
+34
+35    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+35-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:26:5-79
+35-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:26:22-76
+36
+37    <application
+37-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:25:5-90:19
+38        android:allowBackup="true"
+38-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:26:9-35
+39        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+39-->[androidx.core:core:1.8.0] /Users/pipiqiang/.gradle/caches/transforms-3/051c7e8925bf681e61673c862c2dff0f/transformed/core-1.8.0/AndroidManifest.xml:24:18-86
+40        android:dataExtractionRules="@xml/data_extraction_rules"
+40-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:27:9-65
+41        android:extractNativeLibs="false"
+42        android:fullBackupContent="@xml/backup_rules"
+42-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:28:9-54
+43        android:icon="@mipmap/ic_launcher"
+43-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:29:9-43
+44        android:label="@string/app_name"
+44-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:30:9-41
+45        android:roundIcon="@mipmap/ic_launcher_round"
+45-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:31:9-54
+46        android:supportsRtl="true"
+46-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:32:9-35
+47        android:theme="@style/Theme.CameraApp" >
+47-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:33:9-47
+48
+49        <!-- 主活动 -->
+50        <activity
+50-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:37:9-45:20
+51            android:name="com.camera.app.MainActivity"
+51-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:38:13-41
+52            android:exported="true"
+52-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:39:13-36
+53            android:theme="@style/Theme.CameraApp" >
+53-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:40:13-51
+54            <intent-filter>
+54-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:41:13-44:29
+55                <action android:name="android.intent.action.MAIN" />
+55-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:42:17-69
+55-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:42:25-66
+56
+57                <category android:name="android.intent.category.LAUNCHER" />
+57-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:43:17-77
+57-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:43:27-74
+58            </intent-filter>
+59        </activity>
+60
+61        <!-- 设置活动 -->
+62        <activity
+62-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:48:9-52:54
+63            android:name="com.camera.app.SettingsActivity"
+63-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:49:13-45
+64            android:exported="false"
+64-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:50:13-37
+65            android:label="@string/title_activity_settings"
+65-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:51:13-60
+66            android:theme="@style/Theme.CameraApp" />
+66-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:52:13-51
+67
+68        <!-- 照片库活动 -->
+69        <activity
+69-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:55:9-59:54
+70            android:name="com.camera.app.PhotoGalleryActivity"
+70-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:56:13-49
+71            android:exported="false"
+71-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:57:13-37
+72            android:label="照片库"
+72-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:58:13-32
+73            android:theme="@style/Theme.CameraApp" />
+73-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:59:13-51
+74
+75        <!-- 照片查看器活动 -->
+76        <activity
+76-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:62:9-66:54
+77            android:name="com.camera.app.PhotoViewerActivity"
+77-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:63:13-48
+78            android:exported="false"
+78-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:64:13-37
+79            android:label="查看照片"
+79-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:65:13-33
+80            android:theme="@style/Theme.CameraApp" />
+80-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:66:13-51
+81
+82        <!-- 拍照服务 -->
+83        <service
+83-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:69:9-73:54
+84            android:name="com.camera.app.CameraService"
+84-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:70:13-42
+85            android:enabled="true"
+85-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:71:13-35
+86            android:exported="false"
+86-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:72:13-37
+87            android:foregroundServiceType="camera" />
+87-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:73:13-51
+88
+89        <!-- 照片处理服务 -->
+90        <service
+90-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:76:9-79:40
+91            android:name="com.camera.app.PhotoProcessingService"
+91-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:77:13-51
+92            android:enabled="true"
+92-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:78:13-35
+93            android:exported="false" />
+93-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:79:13-37
+94
+95        <!-- 开机广播接收器 -->
+96        <receiver
+96-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:82:9-88:20
+97            android:name="com.camera.app.BootReceiver"
+97-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:82:19-47
+98            android:enabled="true"
+98-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:83:13-35
+99            android:exported="true" >
+99-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:84:13-36
+100            <intent-filter android:priority="1000" >
+100-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:85:13-87:29
+100-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:85:28-51
+101                <action android:name="android.intent.action.BOOT_COMPLETED" />
+101-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:86:17-79
+101-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:86:25-76
+102            </intent-filter>
+103        </receiver>
+104
+105        <provider
+105-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:31:9-39:20
+106            android:name="androidx.startup.InitializationProvider"
+106-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:32:13-67
+107            android:authorities="com.camera.app.androidx-startup"
+107-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:33:13-68
+108            android:exported="false" >
+108-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:34:13-37
+109            <meta-data
+109-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:36:13-38:52
+110                android:name="androidx.work.WorkManagerInitializer"
+110-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:37:17-68
+111                android:value="androidx.startup" />
+111-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:38:17-49
+112            <meta-data
+112-->[androidx.emoji2:emoji2:1.2.0] /Users/pipiqiang/.gradle/caches/transforms-3/69c2bf3db2d6399f8b27770248c77b64/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+113                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+113-->[androidx.emoji2:emoji2:1.2.0] /Users/pipiqiang/.gradle/caches/transforms-3/69c2bf3db2d6399f8b27770248c77b64/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+114                android:value="androidx.startup" />
+114-->[androidx.emoji2:emoji2:1.2.0] /Users/pipiqiang/.gradle/caches/transforms-3/69c2bf3db2d6399f8b27770248c77b64/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+115            <meta-data
+115-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/pipiqiang/.gradle/caches/transforms-3/b66866525484c023abe841c991b28674/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+116                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+116-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/pipiqiang/.gradle/caches/transforms-3/b66866525484c023abe841c991b28674/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+117                android:value="androidx.startup" />
+117-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/pipiqiang/.gradle/caches/transforms-3/b66866525484c023abe841c991b28674/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+118        </provider>
+119
+120        <service
+120-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:41:9-46:35
+121            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+121-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:42:13-88
+122            android:directBootAware="false"
+122-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:43:13-44
+123            android:enabled="@bool/enable_system_alarm_service_default"
+123-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:44:13-72
+124            android:exported="false" />
+124-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:45:13-37
+125        <service
+125-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:47:9-53:35
+126            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+126-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:48:13-84
+127            android:directBootAware="false"
+127-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:49:13-44
+128            android:enabled="@bool/enable_system_job_service_default"
+128-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:50:13-70
+129            android:exported="true"
+129-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:51:13-36
+130            android:permission="android.permission.BIND_JOB_SERVICE" />
+130-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:52:13-69
+131        <service
+131-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:54:9-59:35
+132            android:name="androidx.work.impl.foreground.SystemForegroundService"
+132-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:55:13-81
+133            android:directBootAware="false"
+133-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:56:13-44
+134            android:enabled="@bool/enable_system_foreground_service_default"
+134-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:57:13-77
+135            android:exported="false" />
+135-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:58:13-37
+136
+137        <receiver
+137-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:61:9-66:35
+138            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+138-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:62:13-88
+139            android:directBootAware="false"
+139-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:63:13-44
+140            android:enabled="true"
+140-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:64:13-35
+141            android:exported="false" />
+141-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:65:13-37
+142        <receiver
+142-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:67:9-77:20
+143            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+143-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:68:13-106
+144            android:directBootAware="false"
+144-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:69:13-44
+145            android:enabled="false"
+145-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:70:13-36
+146            android:exported="false" >
+146-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:71:13-37
+147            <intent-filter>
+147-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:73:13-76:29
+148                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+148-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:74:17-87
+148-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:74:25-84
+149                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+149-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:75:17-90
+149-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:75:25-87
+150            </intent-filter>
+151        </receiver>
+152        <receiver
+152-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:78:9-88:20
+153            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+153-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:79:13-104
+154            android:directBootAware="false"
+154-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:80:13-44
+155            android:enabled="false"
+155-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:81:13-36
+156            android:exported="false" >
+156-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:82:13-37
+157            <intent-filter>
+157-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:84:13-87:29
+158                <action android:name="android.intent.action.BATTERY_OKAY" />
+158-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:85:17-77
+158-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:85:25-74
+159                <action android:name="android.intent.action.BATTERY_LOW" />
+159-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:86:17-76
+159-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:86:25-73
+160            </intent-filter>
+161        </receiver>
+162        <receiver
+162-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:89:9-99:20
+163            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+163-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:90:13-104
+164            android:directBootAware="false"
+164-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:91:13-44
+165            android:enabled="false"
+165-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:92:13-36
+166            android:exported="false" >
+166-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:93:13-37
+167            <intent-filter>
+167-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:95:13-98:29
+168                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+168-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:96:17-83
+168-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:96:25-80
+169                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+169-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:97:17-82
+169-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:97:25-79
+170            </intent-filter>
+171        </receiver>
+172        <receiver
+172-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:100:9-109:20
+173            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+173-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:101:13-103
+174            android:directBootAware="false"
+174-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:102:13-44
+175            android:enabled="false"
+175-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:103:13-36
+176            android:exported="false" >
+176-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:104:13-37
+177            <intent-filter>
+177-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:106:13-108:29
+178                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+178-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:107:17-79
+178-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:107:25-76
+179            </intent-filter>
+180        </receiver>
+181        <receiver
+181-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:110:9-121:20
+182            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+182-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:111:13-88
+183            android:directBootAware="false"
+183-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:112:13-44
+184            android:enabled="false"
+184-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:113:13-36
+185            android:exported="false" >
+185-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:114:13-37
+186            <intent-filter>
+186-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:116:13-120:29
+187                <action android:name="android.intent.action.BOOT_COMPLETED" />
+187-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:86:17-79
+187-->/Users/pipiqiang/code/camera/app/src/main/AndroidManifest.xml:86:25-76
+188                <action android:name="android.intent.action.TIME_SET" />
+188-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:118:17-73
+188-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:118:25-70
+189                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+189-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:119:17-81
+189-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:119:25-78
+190            </intent-filter>
+191        </receiver>
+192        <receiver
+192-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:122:9-131:20
+193            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+193-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:123:13-99
+194            android:directBootAware="false"
+194-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:124:13-44
+195            android:enabled="@bool/enable_system_alarm_service_default"
+195-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:125:13-72
+196            android:exported="false" >
+196-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:126:13-37
+197            <intent-filter>
+197-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:128:13-130:29
+198                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+198-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:129:17-98
+198-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:129:25-95
+199            </intent-filter>
+200        </receiver>
+201        <receiver
+201-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:132:9-142:20
+202            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+202-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:133:13-78
+203            android:directBootAware="false"
+203-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:134:13-44
+204            android:enabled="true"
+204-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:135:13-35
+205            android:exported="true"
+205-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:136:13-36
+206            android:permission="android.permission.DUMP" >
+206-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:137:13-57
+207            <intent-filter>
+207-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:139:13-141:29
+208                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+208-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:140:17-88
+208-->[androidx.work:work-runtime:2.7.1] /Users/pipiqiang/.gradle/caches/transforms-3/709e313730c50f0bedb0b3d49bcb6e66/transformed/work-runtime-2.7.1/AndroidManifest.xml:140:25-85
+209            </intent-filter>
+210        </receiver>
+211
+212        <uses-library
+212-->[androidx.window:window:1.0.0] /Users/pipiqiang/.gradle/caches/transforms-3/6cfc80e435d416d98cc163db729c7b24/transformed/jetified-window-1.0.0/AndroidManifest.xml:25:9-27:40
+213            android:name="androidx.window.extensions"
+213-->[androidx.window:window:1.0.0] /Users/pipiqiang/.gradle/caches/transforms-3/6cfc80e435d416d98cc163db729c7b24/transformed/jetified-window-1.0.0/AndroidManifest.xml:26:13-54
+214            android:required="false" />
+214-->[androidx.window:window:1.0.0] /Users/pipiqiang/.gradle/caches/transforms-3/6cfc80e435d416d98cc163db729c7b24/transformed/jetified-window-1.0.0/AndroidManifest.xml:27:13-37
+215        <uses-library
+215-->[androidx.window:window:1.0.0] /Users/pipiqiang/.gradle/caches/transforms-3/6cfc80e435d416d98cc163db729c7b24/transformed/jetified-window-1.0.0/AndroidManifest.xml:28:9-30:40
+216            android:name="androidx.window.sidecar"
+216-->[androidx.window:window:1.0.0] /Users/pipiqiang/.gradle/caches/transforms-3/6cfc80e435d416d98cc163db729c7b24/transformed/jetified-window-1.0.0/AndroidManifest.xml:29:13-51
+217            android:required="false" />
+217-->[androidx.window:window:1.0.0] /Users/pipiqiang/.gradle/caches/transforms-3/6cfc80e435d416d98cc163db729c7b24/transformed/jetified-window-1.0.0/AndroidManifest.xml:30:13-37
+218
+219        <service
+219-->[androidx.room:room-runtime:2.2.5] /Users/pipiqiang/.gradle/caches/transforms-3/9f491e28712b53f551b85d57b95c2986/transformed/room-runtime-2.2.5/AndroidManifest.xml:25:9-28:40
+220            android:name="androidx.room.MultiInstanceInvalidationService"
+220-->[androidx.room:room-runtime:2.2.5] /Users/pipiqiang/.gradle/caches/transforms-3/9f491e28712b53f551b85d57b95c2986/transformed/room-runtime-2.2.5/AndroidManifest.xml:26:13-74
+221            android:directBootAware="true"
+221-->[androidx.room:room-runtime:2.2.5] /Users/pipiqiang/.gradle/caches/transforms-3/9f491e28712b53f551b85d57b95c2986/transformed/room-runtime-2.2.5/AndroidManifest.xml:27:13-43
+222            android:exported="false" />
+222-->[androidx.room:room-runtime:2.2.5] /Users/pipiqiang/.gradle/caches/transforms-3/9f491e28712b53f551b85d57b95c2986/transformed/room-runtime-2.2.5/AndroidManifest.xml:28:13-37
+223    </application>
+224
+225</manifest>
