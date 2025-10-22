@@ -16,6 +16,10 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 开机启动权限 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 展示在锁定屏幕上的权限 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 在锁定屏幕上显示活动的权限 -->
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     
     <!-- 声明使用相机功能 -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />
@@ -64,6 +68,14 @@
             android:exported="false"
             android:label="查看照片"
             android:theme="@style/Theme.CameraApp" />
+        
+        <!-- 相机活动 -->
+        <activity
+            android:name=".CameraActivity"
+            android:exported="false"
+            android:label="相机"
+            android:theme="@style/Theme.CameraApp"
+            android:screenOrientation="portrait" />
         
         <!-- 拍照服务 -->
         <service

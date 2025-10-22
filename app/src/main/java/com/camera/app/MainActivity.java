@@ -23,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnStartStop;
     private Button btnSettings;
     private Button btnGallery;
+    private Button btnCamera;
     private TextView tvStatus;
     private boolean isRunning = false;
     
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         btnStartStop = findViewById(R.id.btn_start_stop);
         btnSettings = findViewById(R.id.btn_settings);
         btnGallery = findViewById(R.id.btn_gallery);
+        btnCamera = findViewById(R.id.btn_camera);
         tvStatus = findViewById(R.id.tv_status);
     }
     
@@ -58,6 +60,14 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(MainActivity.this, "请授予必要权限", Toast.LENGTH_SHORT).show();
                     }
                 }
+            }
+        });
+        
+        btnCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, CameraActivity.class);
+                startActivity(intent);
             }
         });
         
