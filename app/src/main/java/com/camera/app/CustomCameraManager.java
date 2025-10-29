@@ -17,12 +17,14 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.media.MediaScannerConnection; // 添加媒体扫描连接导入
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -253,7 +255,7 @@ public class CustomCameraManager {
             Log.w(TAG, "拍照已在进行中");
             return;
         }
-        
+
         if (cameraDevice == null) {
             Log.e(TAG, "相机未打开");
             if (captureCallback != null) {
@@ -261,7 +263,7 @@ public class CustomCameraManager {
             }
             return;
         }
-        
+
         // 检查captureSession是否已创建
         if (captureSession == null) {
             Log.e(TAG, "相机预览会话未创建");
@@ -270,18 +272,18 @@ public class CustomCameraManager {
             }
             return;
         }
-        
+
         isCapturing = true;
         Log.d(TAG, "开始拍照 - 闪光模式: " + flashMode);
         try {
             final CaptureRequest.Builder captureBuilder =
                     cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             captureBuilder.addTarget(imageReader.getSurface());
-            
+
             // 设置自动对焦
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            
+
             // 设置闪光灯状态（三态）
             if (flashMode == FlashMode.ON) {
                 // 强制闪光：始终在拍照时触发
@@ -299,10 +301,10 @@ public class CustomCameraManager {
                 captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
                 Log.d(TAG, "拍照闪光模式: OFF");
             }
-            
+
             // 方向
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90);
-            
+
             CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
@@ -314,43 +316,50 @@ public class CustomCameraManager {
                         restartPreview();
                     }
                 }
-                
+
                 @Override
                 public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
                     super.onCaptureFailed(session, request, failure);
                     Log.e(TAG, "拍照失败: " + failure.getReason());
                     isCapturing = false;
+                    if (textureView != null) {
+                        restartPreview();
+                    }
                     if (captureCallback != null) {
                         captureCallback.onCaptureError(new Exception("拍照失败: " + failure.getReason()));
                     }
                 }
-                
+
                 @Override
                 public void onCaptureSequenceCompleted(CameraCaptureSession session, int sequenceId, long frameNumber) {
                     super.onCaptureSequenceCompleted(session, sequenceId, frameNumber);
                     Log.d(TAG, "拍照序列完成");
                 }
-                
+
                 @Override
                 public void onCaptureSequenceAborted(CameraCaptureSession session, int sequenceId) {
                     super.onCaptureSequenceAborted(session, sequenceId);
                     Log.e(TAG, "拍照序列被中止");
                     isCapturing = false;
+                    if (textureView != null) {
+                        restartPreview();
+                    }
                     if (captureCallback != null) {
                         captureCallback.onCaptureError(new Exception("拍照序列被中止"));
                     }
                 }
             };
-            
+
             // 先停止预览（仅在有预览时）
             if (textureView != null) {
                 try {
                     captureSession.stopRepeating();
+                    captureSession.abortCaptures();
                 } catch (CameraAccessException e) {
                     Log.e(TAG, "停止预览失败", e);
                 }
             }
-            
+
             captureSession.capture(captureBuilder.build(), captureListener, backgroundHandler);
             Log.d(TAG, "已发送拍照请求");
         } catch (CameraAccessException e) {
@@ -371,11 +380,25 @@ public class CustomCameraManager {
     // 拍照完成后重新启动预览
     private void restartPreview() {
         try {
+            Log.d(TAG, "尝试重新启动预览");
             if (cameraDevice != null && captureSession != null) {
+                // 先停止当前的重复请求
+                try {
+                    captureSession.stopRepeating();
+                } catch (Exception e) {
+                    Log.e(TAG, "停止重复请求失败", e);
+                }
+                
                 final CaptureRequest.Builder previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                 
                 SurfaceTexture texture = textureView != null ? textureView.getSurfaceTexture() : null;
                 if (texture != null) {
+                    // 确保预览尺寸已设置
+                    if (previewSize == null) {
+                        Log.e(TAG, "预览尺寸未设置");
+                        return;
+                    }
+                    
                     texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
                     Surface surface = new Surface(texture);
                     previewBuilder.addTarget(surface);
@@ -394,17 +417,43 @@ public class CustomCameraManager {
                     previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                     previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                     
-                    // 使用setRepeatingBurst可能会更稳定
+                    // 使用setRepeatingRequest重新启动预览
                     captureSession.setRepeatingRequest(previewBuilder.build(), null, backgroundHandler);
                     Log.d(TAG, "预览已重新启动");
+                    
+                    // 确保TextureView可见
+                    if (textureView != null) {
+                        textureView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                textureView.setVisibility(android.view.View.VISIBLE);
+                            }
+                        });
+                    }
                 } else {
                     Log.w(TAG, "无法重新启动预览：Texture为空");
+                    // 尝试重新创建预览
+                    if (textureView != null && textureView.isAvailable()) {
+                        createCameraPreview();
+                    }
                 }
             } else {
                 Log.w(TAG, "无法重新启动预览：相机设备或会话为空");
+                // 尝试重新创建预览
+                if (textureView != null && textureView.isAvailable()) {
+                    createCameraPreview();
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "重新启动预览失败", e);
+            // 尝试重新创建预览
+            if (textureView != null && textureView.isAvailable()) {
+                try {
+                    createCameraPreview();
+                } catch (Exception ignored) {
+                    Log.e(TAG, "重新创建预览失败", ignored);
+                }
+            }
         }
     }
     
@@ -428,6 +477,19 @@ public class CustomCameraManager {
                 cameraDevice = null;
             }
             Log.d(TAG, "相机已断开连接");
+            // 若存在预览视图，尝试延时重连，缓解黑屏
+            if (textureView != null && backgroundHandler != null) {
+                backgroundHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            openCamera();
+                        } catch (Exception e) {
+                            Log.e(TAG, "断开后重连失败", e);
+                        }
+                    }
+                }, 1000);
+            }
         }
         
         @Override
@@ -439,6 +501,18 @@ public class CustomCameraManager {
                 cameraDevice = null;
             }
             Log.e(TAG, "打开相机错误: " + error);
+            if (textureView != null && backgroundHandler != null) {
+                backgroundHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            openCamera();
+                        } catch (Exception e) {
+                            Log.e(TAG, "错误后重连失败", e);
+                        }
+                    }
+                }, 1200);
+            }
         }
     };
     
@@ -599,13 +673,28 @@ public class CustomCameraManager {
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             
-            File file = createImageFile();
+            // 获取目标文件路径
+            File file = getTargetImageFile();
             Log.d(TAG, "创建图片文件: " + file.getAbsolutePath());
+            
             FileOutputStream output = null;
+            File savedFile = null;
             try {
                 output = new FileOutputStream(file);
                 output.write(bytes);
                 Log.d(TAG, "图片保存成功");
+                savedFile = file;
+                
+                // 通知媒体扫描器有新文件
+                try {
+                    MediaScannerConnection.scanFile(context,
+                            new String[]{file.getAbsolutePath()},
+                            new String[]{"image/jpeg"},
+                            null);
+                    Log.d(TAG, "已通知媒体扫描器扫描新文件");
+                } catch (Exception e) {
+                    Log.e(TAG, "通知媒体扫描器失败", e);
+                }
                 
                 // 将图片转换为Bitmap并传递给预览显示回调
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
@@ -614,8 +703,8 @@ public class CustomCameraManager {
                 }
                 
                 // 通知回调拍照成功
-                if (captureCallback != null) {
-                    captureCallback.onCaptureSuccess(file.getAbsolutePath());
+                if (captureCallback != null && savedFile != null) {
+                    captureCallback.onCaptureSuccess(savedFile.getAbsolutePath());
                 }
             } catch (IOException e) {
                 Log.e(TAG, "保存图片失败", e);
@@ -623,6 +712,7 @@ public class CustomCameraManager {
                     captureCallback.onCaptureError(e);
                 }
             } finally {
+                // 确保图像资源被正确关闭
                 if (image != null) {
                     try {
                         image.close();
@@ -637,6 +727,17 @@ public class CustomCameraManager {
                         Log.e(TAG, "关闭输出流失败", e);
                     }
                 }
+                
+                // 拍照完成后重新启动预览（如果textureView不为null）
+                // 使用post方法确保在后台线程中执行
+                if (textureView != null && backgroundHandler != null) {
+                    backgroundHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            restartPreview();
+                        }
+                    });
+                }
             }
         }
     }
@@ -647,6 +748,37 @@ public class CustomCameraManager {
         String imageFileName = "IMG_" + timeStamp + ".jpg";
         File storageDir = context.getExternalFilesDir(null);
         return new File(storageDir, imageFileName);
+    }
+    
+    // 创建公共目录的照片文件（用于系统相册显示）
+    private File createPublicImageFile() {
+        // 创建图片文件在公共图片目录中
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "IMG_" + timeStamp + ".jpg";
+        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File imageFile = new File(storageDir, imageFileName);
+        
+        // 确保目录存在
+        if (!storageDir.exists()) {
+            storageDir.mkdirs();
+        }
+        
+        return imageFile;
+    }
+    
+    // 选择使用哪个目录保存照片
+    private File getTargetImageFile() {
+        // 默认保存到应用私有目录
+        File privateFile = createImageFile();
+        
+        // 如果需要在系统相册中显示，也保存一份到公共目录
+        try {
+            File publicFile = createPublicImageFile();
+            return publicFile;
+        } catch (Exception e) {
+            Log.e(TAG, "无法创建公共目录文件，使用私有目录", e);
+            return privateFile;
+        }
     }
     
     // 选择最优预览尺寸

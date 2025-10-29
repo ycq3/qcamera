@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,10 +23,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdapter.OnPhotoClickListener {
     
@@ -90,40 +93,70 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         photoList.clear();
         photosByDate.clear();
         
-        StorageManager storageManager = new StorageManager(this);
-        File photoDir = storageManager.getPhotoDirectory();
+        // 获取应用私有目录和公共图片目录中的照片
+        List<File> photoDirs = new ArrayList<>();
         
-        if (photoDir != null && photoDir.exists()) {
-            File[] photoFiles = photoDir.listFiles();
-            if (photoFiles != null) {
-                // 先收集所有照片信息
-                List<PhotoItem> tempPhotoList = new ArrayList<>();
-                for (File file : photoFiles) {
-                    if (file.isFile() && file.getName().toLowerCase(Locale.ROOT).endsWith(".jpg")) {
-                        PhotoItem photoItem = new PhotoItem(file.getAbsolutePath(), file.lastModified());
-                        tempPhotoList.add(photoItem);
-                        
-                        // 按日期分组
-                        String dateKey = getDateKey(file.lastModified());
-                        if (!photosByDate.containsKey(dateKey)) {
-                            photosByDate.put(dateKey, new ArrayList<PhotoItem>());
+        // 添加应用私有目录
+        StorageManager storageManager = new StorageManager(this);
+        File privatePhotoDir = storageManager.getPhotoDirectory();
+        if (privatePhotoDir != null && privatePhotoDir.exists()) {
+            photoDirs.add(privatePhotoDir);
+        }
+        
+        // 添加公共图片目录
+        File publicPhotoDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        if (publicPhotoDir != null && publicPhotoDir.exists()) {
+            photoDirs.add(publicPhotoDir);
+        }
+        
+        // 从所有目录加载照片
+        for (File photoDir : photoDirs) {
+            if (photoDir != null && photoDir.exists()) {
+                File[] photoFiles = photoDir.listFiles();
+                if (photoFiles != null) {
+                    // 先收集所有照片信息
+                    List<PhotoItem> tempPhotoList = new ArrayList<>();
+                    for (File file : photoFiles) {
+                        if (file.isFile() && file.getName().toLowerCase(Locale.ROOT).endsWith(".jpg")) {
+                            PhotoItem photoItem = new PhotoItem(file.getAbsolutePath(), file.lastModified());
+                            tempPhotoList.add(photoItem);
+                            
+                            // 按日期分组
+                            String dateKey = getDateKey(file.lastModified());
+                            if (!photosByDate.containsKey(dateKey)) {
+                                photosByDate.put(dateKey, new ArrayList<PhotoItem>());
+                            }
+                            photosByDate.get(dateKey).add(photoItem);
                         }
-                        photosByDate.get(dateKey).add(photoItem);
                     }
+                    
+                    // 按拍摄时间倒序排列（最新的在前面）
+                    Collections.sort(tempPhotoList, new Comparator<PhotoItem>() {
+                        @Override
+                        public int compare(PhotoItem p1, PhotoItem p2) {
+                            return Long.compare(p2.getTimestamp(), p1.getTimestamp());
+                        }
+                    });
+                    
+                    // 批量添加到主列表
+                    photoList.addAll(tempPhotoList);
                 }
-                
-                // 按拍摄时间倒序排列（最新的在前面）
-                Collections.sort(tempPhotoList, new Comparator<PhotoItem>() {
-                    @Override
-                    public int compare(PhotoItem p1, PhotoItem p2) {
-                        return Long.compare(p2.getTimestamp(), p1.getTimestamp());
-                    }
-                });
-                
-                // 批量添加到主列表
-                photoList.addAll(tempPhotoList);
             }
         }
+        
+        // 去重处理，避免同一张照片在两个目录中都存在
+        Set<String> uniquePaths = new HashSet<>();
+        List<PhotoItem> uniquePhotos = new ArrayList<>();
+        for (PhotoItem photo : photoList) {
+            // 使用文件名作为去重依据，避免同一照片在两个目录中重复显示
+            String fileName = new File(photo.getPath()).getName();
+            if (!uniquePaths.contains(fileName)) {
+                uniquePaths.add(fileName);
+                uniquePhotos.add(photo);
+            }
+        }
+        photoList.clear();
+        photoList.addAll(uniquePhotos);
         
         photoAdapter.notifyDataSetChanged();
         

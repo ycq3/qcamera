@@ -68,6 +68,23 @@
             android:layout_height="match_parent"
             android:visibility="gone"
             android:scaleType="centerCrop" />
+
+        <!-- 拍摄时间显示（覆盖在图片上） -->
+        <TextView
+            android:id="@+id/tv_capture_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="12dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:background="#66000000"
+            android:visibility="gone"
+            android:text="" />
             
         <!-- 闪光灯指示器 -->
         <ImageButton
