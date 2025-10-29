@@ -32,7 +32,7 @@ public class CameraService extends Service {
     private Runnable captureRunnable;
     private boolean isCapturing = false;
     private int cameraIndex = 0; // 摄像头索引
-    private boolean isFlashEnabled = false; // 闪光灯设置
+    private FlashMode flashMode = FlashMode.OFF; // 闪光灯三态
     
     // 电源管理
     private PowerManager.WakeLock wakeLock;
@@ -61,15 +61,22 @@ public class CameraService extends Service {
             if (ACTION_START_CAPTURE.equals(action)) {
                 // 获取摄像头索引和闪光灯设置
                 cameraIndex = intent.getIntExtra("cameraIndex", 0);
-                isFlashEnabled = intent.getBooleanExtra("flashEnabled", false);
-                Log.d(TAG, "接收启动拍照命令 - 摄像头索引: " + cameraIndex + ", 闪光灯启用: " + isFlashEnabled);
-                Log.d(TAG, "确认从Intent接收到的flashEnabled值: " + intent.getBooleanExtra("flashEnabled", false));
+                int fmOrdinal = intent.hasExtra("flashMode")
+                        ? intent.getIntExtra("flashMode", 0)
+                        : (intent.getBooleanExtra("flashEnabled", false) ? 1 : 0); // 兼容旧布尔开关
+                try {
+                    flashMode = FlashMode.values()[fmOrdinal];
+                } catch (Exception e) {
+                    flashMode = FlashMode.OFF;
+                }
+                Log.d(TAG, "接收启动拍照命令 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                 startCapture();
             } else if (ACTION_STOP_CAPTURE.equals(action)) {
                 Log.d(TAG, "接收停止拍照命令");
                 stopCapture();
             }
         }
+        // 如果intent为null，不执行任何操作，避免自动开始拍照
         return START_STICKY; // 服务被杀死后会重启
     }
     
@@ -141,13 +148,13 @@ public class CameraService extends Service {
         // 获取设置的拍摄间隔时间（秒）
         int intervalSeconds = getCaptureInterval();
         Log.d(TAG, "设置拍照间隔: " + intervalSeconds + " 秒");
-        Log.d(TAG, "创建拍照任务时的参数 - 摄像头索引: " + cameraIndex + ", 闪光灯启用: " + isFlashEnabled);
+        Log.d(TAG, "创建拍照任务时的参数 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
         
         captureRunnable = new Runnable() {
             @Override
             public void run() {
                 if (isCapturing) {
-                    Log.d(TAG, "执行拍照任务 - 摄像头索引: " + cameraIndex + ", 闪光灯启用: " + isFlashEnabled);
+                    Log.d(TAG, "执行拍照任务 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                     // 执行拍照
                     executeCapture();
                     
@@ -158,7 +165,9 @@ public class CameraService extends Service {
         };
         
         // 立即开始第一次拍照
-        handler.post(captureRunnable);
+        if (isCapturing) {
+            handler.post(captureRunnable);
+        }
     }
     
     private void executeCapture() {
@@ -168,7 +177,7 @@ public class CameraService extends Service {
             public void run() {
                 CustomCameraManager cameraManager = null;
                 try {
-                    Log.d(TAG, "开始执行拍照任务 - 当前摄像头索引: " + cameraIndex + ", 闪光灯启用: " + isFlashEnabled);
+                    Log.d(TAG, "开始执行拍照任务 - 当前摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                     
                     // 初始化管理器
                     cameraManager = new CustomCameraManager(CameraService.this);
@@ -178,10 +187,9 @@ public class CameraService extends Service {
                     
                     // 设置摄像头索引
                     cameraManager.setSelectedCameraIndex(cameraIndex);
-                    // 设置闪光灯状态
-                    cameraManager.setFlashEnabled(isFlashEnabled);
-                    Log.d(TAG, "设置相机管理器参数 - 摄像头索引: " + cameraIndex + ", 闪光灯启用: " + isFlashEnabled);
-                    Log.d(TAG, "确认闪光灯状态 - isFlashEnabled变量值: " + isFlashEnabled);
+                    // 设置闪光灯三态
+                    cameraManager.setFlashMode(flashMode);
+                    Log.d(TAG, "设置相机管理器参数 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                     
                     // 设置TextureView（虽然在服务中不直接使用，但保持接口一致性）
                     cameraManager.setTextureView(null);

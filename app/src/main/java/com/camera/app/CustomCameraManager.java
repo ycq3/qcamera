@@ -55,7 +55,8 @@ public class CustomCameraManager {
     private CaptureCallback captureCallback;
     private boolean isCameraOpened = false;
     private int selectedCameraIndex = 0; // 默认选择第一个摄像头
-    private boolean isFlashEnabled = false; // 闪光灯设置
+    private boolean isFlashEnabled = false; // 兼容旧逻辑的布尔标记
+    private FlashMode flashMode = FlashMode.OFF; // 三态闪光灯模式
     
     // 添加TextureView引用
     private TextureView textureView;
@@ -92,11 +93,23 @@ public class CustomCameraManager {
     // 设置闪光灯状态
     public void setFlashEnabled(boolean enabled) {
         this.isFlashEnabled = enabled;
+        this.flashMode = enabled ? FlashMode.ON : FlashMode.OFF;
     }
     
     // 获取闪光灯状态
     public boolean isFlashEnabled() {
         return this.isFlashEnabled;
+    }
+
+    // 设置三态闪光灯模式
+    public void setFlashMode(FlashMode mode) {
+        this.flashMode = mode == null ? FlashMode.OFF : mode;
+        // 同步旧布尔标记，仅用于日志/兼容：ON 为 true，其它为 false
+        this.isFlashEnabled = (this.flashMode == FlashMode.ON);
+    }
+
+    public FlashMode getFlashMode() {
+        return this.flashMode;
     }
     
     // 获取所有可用的摄像头ID
@@ -154,16 +167,20 @@ public class CustomCameraManager {
         isCapturing = false; // 重置拍照状态
         CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
         try {
+            Log.d(TAG, "开始打开相机");
+            
             // 获取所有摄像头ID
             cameraIds = manager.getCameraIdList();
+            Log.d(TAG, "找到 " + cameraIds.length + " 个摄像头");
             
             // 检查选中的摄像头索引是否有效
             if (selectedCameraIndex >= cameraIds.length) {
                 selectedCameraIndex = 0; // 回退到默认摄像头
+                Log.w(TAG, "摄像头索引超出范围，回退到默认摄像头");
             }
             
             cameraId = cameraIds[selectedCameraIndex]; // 使用选中的摄像头
-            Log.d(TAG, "尝试打开相机 ID: " + cameraId + ", 闪光灯启用: " + isFlashEnabled);
+            Log.d(TAG, "尝试打开相机 ID: " + cameraId + ", 闪光模式: " + flashMode);
             
             // 获取摄像头支持的最大分辨率
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
@@ -181,12 +198,16 @@ public class CustomCameraManager {
                 Log.d(TAG, "选择拍照尺寸: " + captureSize.getWidth() + "x" + captureSize.getHeight());
                 
                 // 初始化ImageReader，使用拍照的最大分辨率
+                if (imageReader != null) {
+                    imageReader.close();
+                }
                 imageReader = ImageReader.newInstance(
                         captureSize.getWidth(), 
                         captureSize.getHeight(),
                         ImageFormat.JPEG, 
                         2);
                 imageReader.setOnImageAvailableListener(onImageAvailableListener, backgroundHandler);
+                Log.d(TAG, "ImageReader初始化完成");
             }
             
             manager.openCamera(cameraId, stateCallback, backgroundHandler);
@@ -251,8 +272,7 @@ public class CustomCameraManager {
         }
         
         isCapturing = true;
-        Log.d(TAG, "开始拍照 - 闪光灯启用状态: " + isFlashEnabled);
-        Log.d(TAG, "确认内部闪光灯状态变量: " + this.isFlashEnabled);
+        Log.d(TAG, "开始拍照 - 闪光模式: " + flashMode);
         try {
             final CaptureRequest.Builder captureBuilder =
                     cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -262,15 +282,22 @@ public class CustomCameraManager {
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             
-            // 设置闪光灯状态 - 修复闪光灯问题
-            if (isFlashEnabled) {
-                captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
+            // 设置闪光灯状态（三态）
+            if (flashMode == FlashMode.ON) {
+                // 强制闪光：始终在拍照时触发
+                captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_ALWAYS_FLASH);
+                Log.d(TAG, "拍照闪光模式: ALWAYS_FLASH");
+            } else if (flashMode == FlashMode.AUTO) {
+                // 自动闪光：由AE判断是否需要
                 captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                Log.d(TAG, "设置拍照闪光灯模式为: FLASH_MODE_SINGLE (自动闪光)");
+                // 保留单闪以提高部分HAL兼容性
+                captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
+                Log.d(TAG, "拍照闪光模式: AUTO_FLASH + SINGLE");
             } else {
+                // 关闭闪光
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
                 captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-                Log.d(TAG, "设置拍照闪光灯模式为: FLASH_MODE_OFF");
+                Log.d(TAG, "拍照闪光模式: OFF");
             }
             
             // 方向
@@ -353,15 +380,15 @@ public class CustomCameraManager {
                     Surface surface = new Surface(texture);
                     previewBuilder.addTarget(surface);
                     
-                    // 设置预览时的闪光灯状态（仅在需要持续闪光时使用）
-                    if (isFlashEnabled) {
+                    // 预览闪光（三态）：ON 使用手电（TORCH），AUTO/OFF 关闭
+                    if (flashMode == FlashMode.ON) {
                         previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
                         previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-                        Log.d(TAG, "设置预览闪光灯模式为: FLASH_MODE_TORCH");
+                        Log.d(TAG, "预览闪光: TORCH");
                     } else {
                         previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
                         previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-                        Log.d(TAG, "设置预览闪光灯模式为: FLASH_MODE_OFF");
+                        Log.d(TAG, "预览闪光: OFF");
                     }
                     
                     previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
@@ -419,10 +446,18 @@ public class CustomCameraManager {
         try {
             // 在服务模式下，textureView可能为null，我们只需要创建captureSession
             Surface previewSurface = null;
+            SurfaceTexture texture = null;
+            
             if (textureView != null) {
-                SurfaceTexture texture = textureView.getSurfaceTexture();
+                texture = textureView.getSurfaceTexture();
                 if (texture == null) {
                     Log.e(TAG, "SurfaceTexture为空");
+                    return;
+                }
+                
+                // 确保预览尺寸已设置
+                if (previewSize == null) {
+                    Log.e(TAG, "预览尺寸未设置");
                     return;
                 }
                 
@@ -430,28 +465,33 @@ public class CustomCameraManager {
                 previewSurface = new Surface(texture);
             }
             
-            // 创建预览请求构建器
-            final CaptureRequest.Builder previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            // 确保相机设备已打开
+            if (cameraDevice == null) {
+                Log.e(TAG, "相机设备为空");
+                return;
+            }
             
-            // 添加预览surface（如果可用）
+            // 创建预览请求构建器（仅用于预览 Surface）
+            final CaptureRequest.Builder previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+
+            // 添加预览 surface（如果可用）
             if (previewSurface != null) {
                 previewBuilder.addTarget(previewSurface);
             }
-            
-            // 添加ImageReader的surface（用于拍照）
-            if (imageReader != null) {
-                previewBuilder.addTarget(imageReader.getSurface());
-            }
-            
-            // 设置预览时的闪光灯状态和自动曝光模式
-            if (isFlashEnabled) {
+
+            // 预览阶段不向 ImageReader 输出，避免不必要的负载与异常
+
+            // 预览阶段闪光（三态）：ON 使用手电（需有预览Surface），AUTO/OFF 关闭
+            if (flashMode == FlashMode.ON && previewSurface != null) {
                 previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
                 previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+                Log.d(TAG, "createPreview: 预览闪光 TORCH");
             } else {
                 previewBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
                 previewBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+                Log.d(TAG, "createPreview: 预览闪光 OFF");
             }
-            
+
             // 设置自动对焦
             previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
             previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
@@ -465,34 +505,58 @@ public class CustomCameraManager {
                 surfaces.add(imageReader.getSurface());
             }
             
-            // 将previewSurface设为final以便在内部类中使用
-            final Surface finalPreviewSurface = previewSurface;
+            // 确保surface列表不为空
+            if (surfaces.isEmpty()) {
+                Log.e(TAG, "没有可用的surface");
+                return;
+            }
             
+            Log.d(TAG, "准备创建capture session，surface数量: " + surfaces.size());
+            // 在内部类中使用时需要是final或有效final
+            final boolean hasPreviewSurface = (previewSurface != null);
+
             cameraDevice.createCaptureSession(surfaces,
                     new CameraCaptureSession.StateCallback() {
                         @Override
                         public void onConfigured(CameraCaptureSession session) {
-                            if (cameraDevice == null) return;
-                            
+                            Log.d(TAG, "相机预览会话已配置");
+                            if (cameraDevice == null) {
+                                Log.e(TAG, "相机设备为空，无法设置预览");
+                                return;
+                            }
+
                             captureSession = session;
                             try {
-                                // 只有在有预览surface时才设置重复请求
-                                if (finalPreviewSurface != null) {
+                                if (hasPreviewSurface) {
+                                    // 仅在有预览 Surface 时启动重复预览请求
                                     captureSession.setRepeatingRequest(previewBuilder.build(), null, backgroundHandler);
+                                    Log.d(TAG, "相机预览会话配置完成（包含预览）");
+                                } else {
+                                    // 服务模式（无预览）下不启动重复请求，保留会话用于静态拍照
+                                    Log.d(TAG, "相机会话配置完成（无预览，仅拍照）");
                                 }
-                                Log.d(TAG, "相机预览会话配置完成");
                             } catch (CameraAccessException e) {
                                 Log.e(TAG, "配置预览失败", e);
+                            } catch (IllegalStateException e) {
+                                Log.e(TAG, "相机状态异常", e);
                             }
                         }
-                        
+
                         @Override
                         public void onConfigureFailed(CameraCaptureSession session) {
                             Log.e(TAG, "配置失败");
                         }
+
+                        @Override
+                        public void onClosed(CameraCaptureSession session) {
+                            Log.d(TAG, "相机预览会话已关闭");
+                            super.onClosed(session);
+                        }
                     }, backgroundHandler);
-        } catch (Exception e) {
+        } catch (CameraAccessException e) {
             Log.e(TAG, "创建预览失败", e);
+        } catch (Exception e) {
+            Log.e(TAG, "创建预览时发生未知错误", e);
         }
     }
     
@@ -501,11 +565,16 @@ public class CustomCameraManager {
         @Override
         public void onImageAvailable(ImageReader reader) {
             Log.d(TAG, "图像数据已准备好");
-            if (backgroundHandler != null) {
-                backgroundHandler.post(new ImageSaver(reader.acquireNextImage()));
+            Image image = reader.acquireNextImage();
+            if (image != null) {
+                if (backgroundHandler != null) {
+                    backgroundHandler.post(new ImageSaver(image));
+                } else {
+                    // 如果后台线程不可用，直接处理
+                    new ImageSaver(image).run();
+                }
             } else {
-                // 如果后台线程不可用，直接处理
-                new ImageSaver(reader.acquireNextImage()).run();
+                Log.w(TAG, "获取到空的图像数据");
             }
         }
     };
@@ -519,6 +588,12 @@ public class CustomCameraManager {
         
         @Override
         public void run() {
+            // 检查image是否为null
+            if (image == null) {
+                Log.e(TAG, "图像数据为空，无法保存");
+                return;
+            }
+            
             Log.d(TAG, "开始保存图片");
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];

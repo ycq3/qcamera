@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -74,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private String cameraId;
     private Size previewSize;
     private boolean isFlashOn = false; // 仅用于预览时的闪光灯指示
-    private boolean isFlashEnabledForCapture = false; // 用于拍照时的闪光灯设置
+    private FlashMode flashModeForCapture = FlashMode.OFF; // 闪光灯三态：关/开/自动
     private boolean isPreviewShowing = false;
     
     // 自定义相机管理器
@@ -168,7 +169,10 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(captureCompletedReceiver, captureFilter);
         
         // 检查必要权限
-        checkPermissions();
+        if (checkPermissions()) {
+            // 如果权限已授予，检查服务是否正在运行
+            checkServiceStatus();
+        }
         
         // 初始化计数器显示
         updateCaptureCountDisplay();
@@ -434,21 +438,33 @@ public class MainActivity extends AppCompatActivity {
     
     // 切换闪光灯设置（用于拍照）
     private void toggleFlashSetting() {
-        isFlashEnabledForCapture = !isFlashEnabledForCapture;
-        Log.d(TAG, "切换闪光灯设置 - 当前状态: " + isFlashEnabledForCapture);
-        Log.d(TAG, "切换后isFlashEnabledForCapture变量值: " + isFlashEnabledForCapture);
-        btnFlashToggle.setText(isFlashEnabledForCapture ? "闪光灯: 开" : "闪光灯: 关");
-        
+        // OFF -> ON -> AUTO -> OFF 循环
+        switch (flashModeForCapture) {
+            case OFF:
+                flashModeForCapture = FlashMode.ON;
+                break;
+            case ON:
+                flashModeForCapture = FlashMode.AUTO;
+                break;
+            default:
+                flashModeForCapture = FlashMode.OFF;
+                break;
+        }
+        Log.d(TAG, "切换闪光灯设置 - 当前模式: " + flashModeForCapture);
+        String modeText = (flashModeForCapture == FlashMode.ON) ? "闪光灯: 开" : (flashModeForCapture == FlashMode.AUTO ? "闪光灯: 自动" : "闪光灯: 关");
+        btnFlashToggle.setText(modeText);
+
         // 更新预览时的闪光灯指示器
         updateFlashIndicator();
-        
-        Toast.makeText(this, "拍照时闪光灯设置: " + (isFlashEnabledForCapture ? "开启" : "关闭"), Toast.LENGTH_SHORT).show();
+
+        String toastText = (flashModeForCapture == FlashMode.ON) ? "开启" : (flashModeForCapture == FlashMode.AUTO ? "自动" : "关闭");
+        Toast.makeText(this, "拍照时闪光灯设置: " + toastText, Toast.LENGTH_SHORT).show();
     }
     
     // 更新预览时的闪光灯指示器
     private void updateFlashIndicator() {
         if (btnFlashIndicator != null) {
-            btnFlashIndicator.setImageResource(isFlashEnabledForCapture ? R.drawable.ic_flash_on : R.drawable.ic_flash_off);
+            btnFlashIndicator.setImageResource(flashModeForCapture == FlashMode.ON ? R.drawable.ic_flash_on : R.drawable.ic_flash_off);
         }
     }
     
@@ -466,16 +482,14 @@ public class MainActivity extends AppCompatActivity {
         showCameraPreview();
         
         // 在启动服务前记录当前闪光灯状态
-        Log.d(TAG, "启动拍照服务前检查 - 摄像头索引: " + currentCameraIndex + ", 闪光灯启用: " + isFlashEnabledForCapture);
-        Log.d(TAG, "确认isFlashEnabledForCapture变量值: " + isFlashEnabledForCapture);
+        Log.d(TAG, "启动拍照服务前检查 - 摄像头索引: " + currentCameraIndex + ", 闪光模式: " + flashModeForCapture);
         
         // 启动拍照服务
         Intent serviceIntent = new Intent(this, CameraService.class);
         // 传递摄像头索引和闪光灯设置给服务
-        Log.d(TAG, "启动拍照服务 - 摄像头索引: " + currentCameraIndex + ", 闪光灯启用: " + isFlashEnabledForCapture);
-        Log.d(TAG, "向Intent中放入flashEnabled值: " + isFlashEnabledForCapture);
+        Log.d(TAG, "启动拍照服务 - 摄像头索引: " + currentCameraIndex + ", 闪光模式: " + flashModeForCapture);
         serviceIntent.putExtra("cameraIndex", currentCameraIndex);
-        serviceIntent.putExtra("flashEnabled", isFlashEnabledForCapture);
+        serviceIntent.putExtra("flashMode", flashModeForCapture.ordinal());
         serviceIntent.setAction(CameraService.ACTION_START_CAPTURE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
@@ -559,6 +573,10 @@ public class MainActivity extends AppCompatActivity {
     // 更新计数器显示
     private void updateCaptureCountDisplay() {
         if (tvCaptureCount != null) {
+            // 重新加载以获取服务侧的最新计数
+            if (captureCounter != null) {
+                captureCounter.reloadCounts();
+            }
             int sessionCount = captureCounter.getSessionCount();
             tvCaptureCount.setText("已拍张数: " + sessionCount);
         }
@@ -601,70 +619,32 @@ public class MainActivity extends AppCompatActivity {
         btnSelectCamera.setVisibility(View.VISIBLE); // 显示摄像头选择按钮
         btnFlashToggle.setVisibility(View.VISIBLE); // 显示闪光灯设置按钮
         tvCaptureCount.setVisibility(View.VISIBLE); // 显示计数器
-        
-        // 显示TextureView并隐藏ImageView
-        textureView.setVisibility(View.VISIBLE);
-        ivCapturedImage.setVisibility(View.GONE);
-        
+    
+        // 确保ImageView隐藏，TextureView显示
+        if (ivCapturedImage != null) {
+            ivCapturedImage.setVisibility(View.GONE);
+        }
+        if (textureView != null) {
+            textureView.setVisibility(View.VISIBLE);
+            // 注意：TextureView不支持背景绘制，所以我们移除设置背景颜色的代码
+        }
+    
         // 更新摄像头选择按钮文本
         if (cameraNames != null && cameraNames.length > currentCameraIndex) {
             btnSelectCamera.setText(cameraNames[currentCameraIndex]);
         }
-        
+    
         isPreviewShowing = true;
         startBackgroundThread();
-        
+    
         // 如果纹理视图已经准备好了，就打开相机
-        if (textureView.isAvailable()) {
+        if (textureView != null && textureView.isAvailable()) {
             openCamera(textureView.getWidth(), textureView.getHeight());
-        } else {
+        } else if (textureView != null) {
             textureView.setSurfaceTextureListener(surfaceTextureListener);
         }
     }
-    
-    // 显示拍摄的照片
-    private void showCapturedImage(Bitmap bitmap) {
-        if (bitmap != null && ivCapturedImage != null) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // 隐藏TextureView并显示ImageView
-                    if (textureView != null) {
-                        textureView.setVisibility(View.GONE);
-                    }
-                    ivCapturedImage.setVisibility(View.VISIBLE);
-                    ivCapturedImage.setImageBitmap(bitmap);
-                    Log.d(TAG, "显示拍摄的照片");
-                }
-            });
-        }
-    }
-    
-    // 显示上次拍摄的照片
-    private void showLastCapturedImage(String photoPath) {
-        // 显示最后拍摄的照片
-        if (photoPath != null && !photoPath.isEmpty()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    // 隐藏TextureView并显示ImageView
-                    if (textureView != null) {
-                        textureView.setVisibility(View.GONE);
-                    }
-                    if (ivCapturedImage != null) {
-                        ivCapturedImage.setVisibility(View.VISIBLE);
-                        
-                        // 加载并显示图片
-                        Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
-                        if (bitmap != null) {
-                            ivCapturedImage.setImageBitmap(bitmap);
-                        }
-                    }
-                }
-            });
-        }
-    }
-    
+
     private void hideCameraPreview() {
         cameraPreviewContainer.setVisibility(View.GONE);
         appIconContainer.setVisibility(View.VISIBLE); // 显示图标容器
@@ -682,12 +662,12 @@ public class MainActivity extends AppCompatActivity {
         
         stopBackgroundThread();
         
-        // 确保ImageView也隐藏
+        // 确保ImageView和TextureView都隐藏
         if (ivCapturedImage != null) {
             ivCapturedImage.setVisibility(View.GONE);
         }
         if (textureView != null) {
-            textureView.setVisibility(View.VISIBLE);
+            textureView.setVisibility(View.GONE);
         }
     }
     
@@ -758,52 +738,55 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 // 使用自定义相机管理器
                 if (customCameraManager == null) {
+                    Log.d(TAG, "创建新的CustomCameraManager实例");
                     customCameraManager = new CustomCameraManager(MainActivity.this);
-                    customCameraManager.setTextureView(textureView);
-                    customCameraManager.setSelectedCameraIndex(currentCameraIndex);
-                    customCameraManager.setFlashEnabled(isFlashEnabledForCapture);
-                    
-                    // 设置预览显示回调
-                    customCameraManager.setPreviewDisplayCallback(new CustomCameraManager.PreviewDisplayCallback() {
-                        @Override
-                        public void onPreviewDisplay(Bitmap bitmap) {
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    // 显示拍摄的照片
-                                    showCapturedImage(bitmap);
-                                }
-                            });
-                        }
-                    });
-                    
-                    // 设置拍照回调
-                    customCameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
-                        @Override
-                        public void onCaptureSuccess(String imagePath) {
-                            // 发送广播通知拍照完成
-                            Intent captureCompletedIntent = new Intent("com.camera.app.action.CAPTURE_COMPLETED");
-                            captureCompletedIntent.putExtra("photoPath", imagePath);
-                            sendBroadcast(captureCompletedIntent);
-                            
-                            // 发送显示最后图片的广播
-                            Intent showLastImageIntent = new Intent("com.camera.app.action.SHOW_LAST_IMAGE");
-                            showLastImageIntent.putExtra("photoPath", imagePath);
-                            sendBroadcast(showLastImageIntent);
-                        }
+                } 
+                
+                // 更新配置
+                customCameraManager.setTextureView(textureView);
+                customCameraManager.setSelectedCameraIndex(currentCameraIndex);
+                customCameraManager.setFlashMode(flashModeForCapture);
+                
+                // 设置预览显示回调
+                customCameraManager.setPreviewDisplayCallback(new CustomCameraManager.PreviewDisplayCallback() {
+                    @Override
+                    public void onPreviewDisplay(Bitmap bitmap) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                // 显示拍摄的照片
+                                showCapturedImage(bitmap);
+                            }
+                        });
+                    }
+                });
+                
+                // 设置拍照回调
+                customCameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
+                    @Override
+                    public void onCaptureSuccess(String imagePath) {
+                        // 发送广播通知拍照完成
+                        Intent captureCompletedIntent = new Intent("com.camera.app.action.CAPTURE_COMPLETED");
+                        captureCompletedIntent.putExtra("photoPath", imagePath);
+                        sendBroadcast(captureCompletedIntent);
                         
-                        @Override
-                        public void onCaptureError(Exception e) {
-                            Log.e(TAG, "拍照失败", e);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(MainActivity.this, "拍照失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                }
-                            });
-                        }
-                    });
-                }
+                        // 发送显示最后图片的广播
+                        Intent showLastImageIntent = new Intent("com.camera.app.action.SHOW_LAST_IMAGE");
+                        showLastImageIntent.putExtra("photoPath", imagePath);
+                        sendBroadcast(showLastImageIntent);
+                    }
+                    
+                    @Override
+                    public void onCaptureError(Exception e) {
+                        Log.e(TAG, "拍照失败", e);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "拍照失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                });
                 
                 customCameraManager.startBackgroundThread();
                 customCameraManager.openCamera();
@@ -858,5 +841,55 @@ public class MainActivity extends AppCompatActivity {
         
         unregisterReceiver(serviceStatusReceiver);
         unregisterReceiver(captureCompletedReceiver); // 取消注册新的广播接收器
+    }
+    
+    // 显示拍摄的照片
+    private void showCapturedImage(Bitmap bitmap) {
+        if (bitmap != null && ivCapturedImage != null) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // 隐藏TextureView并显示ImageView
+                    if (textureView != null) {
+                        textureView.setVisibility(View.GONE);
+                    }
+                    ivCapturedImage.setVisibility(View.VISIBLE);
+                    ivCapturedImage.setImageBitmap(bitmap);
+                    Log.d(TAG, "显示拍摄的照片");
+                }
+            });
+        }
+    }
+
+    // 显示上次拍摄的照片
+    private void showLastCapturedImage(String photoPath) {
+        // 显示最后拍摄的照片
+        if (photoPath != null && !photoPath.isEmpty()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // 隐藏TextureView并显示ImageView
+                    if (textureView != null) {
+                        textureView.setVisibility(View.GONE);
+                    }
+                    if (ivCapturedImage != null) {
+                        ivCapturedImage.setVisibility(View.VISIBLE);
+                        
+                        // 加载并显示图片
+                        Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
+                        if (bitmap != null) {
+                            ivCapturedImage.setImageBitmap(bitmap);
+                        }
+                    }
+                }
+            });
+        }
+    }
+    
+    // 检查服务状态
+    private void checkServiceStatus() {
+        // 这里可以添加检查服务是否正在运行的逻辑
+        // 简单起见，我们假设服务未运行
+        updateUI(false);
     }
 }

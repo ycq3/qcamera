@@ -31,6 +31,13 @@ public class CaptureCounter {
         totalCount = sharedPreferences.getInt(KEY_TOTAL_COUNT, 0);
         Log.d(TAG, "加载计数器 - 会话计数: " + sessionCount + ", 总计数: " + totalCount);
     }
+
+    /**
+     * 重新从SharedPreferences加载计数（跨组件更新时调用）
+     */
+    public void reloadCounts() {
+        loadCounts();
+    }
     
     /**
      * 递增拍照计数
