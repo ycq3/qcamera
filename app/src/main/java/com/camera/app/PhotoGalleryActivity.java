@@ -17,6 +17,8 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -103,60 +105,88 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
             photoDirs.add(privatePhotoDir);
         }
         
-        // 添加公共图片目录
-        File publicPhotoDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        if (publicPhotoDir != null && publicPhotoDir.exists()) {
-            photoDirs.add(publicPhotoDir);
-        }
-        
-        // 从所有目录加载照片
-        for (File photoDir : photoDirs) {
-            if (photoDir != null && photoDir.exists()) {
-                File[] photoFiles = photoDir.listFiles();
-                if (photoFiles != null) {
-                    // 先收集所有照片信息
-                    List<PhotoItem> tempPhotoList = new ArrayList<>();
-                    for (File file : photoFiles) {
-                        if (file.isFile() && file.getName().toLowerCase(Locale.ROOT).endsWith(".jpg")) {
-                            PhotoItem photoItem = new PhotoItem(file.getAbsolutePath(), file.lastModified());
-                            tempPhotoList.add(photoItem);
-                            
-                            // 按日期分组
-                            String dateKey = getDateKey(file.lastModified());
-                            if (!photosByDate.containsKey(dateKey)) {
-                                photosByDate.put(dateKey, new ArrayList<PhotoItem>());
-                            }
-                            photosByDate.get(dateKey).add(photoItem);
-                        }
-                    }
-                    
-                    // 按拍摄时间倒序排列（最新的在前面）
-                    Collections.sort(tempPhotoList, new Comparator<PhotoItem>() {
-                        @Override
-                        public int compare(PhotoItem p1, PhotoItem p2) {
-                            return Long.compare(p2.getTimestamp(), p1.getTimestamp());
-                        }
-                    });
-                    
-                    // 批量添加到主列表
-                    photoList.addAll(tempPhotoList);
-                }
+        // 添加应用专用的照片目录（Pictures/CameraApp/）
+        File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        if (picturesDir != null && picturesDir.exists()) {
+            File appPhotoDir = new File(picturesDir, "CameraApp");
+            if (appPhotoDir.exists()) {
+                photoDirs.add(appPhotoDir);
+                Log.d("PhotoGallery", "添加应用照片目录: " + appPhotoDir.getAbsolutePath());
+            } else {
+                Log.d("PhotoGallery", "应用照片目录不存在: " + appPhotoDir.getAbsolutePath());
             }
         }
         
-        // 去重处理，避免同一张照片在两个目录中都存在
+        // 也添加公共图片根目录（兼容旧照片，如果有的话）
+        if (picturesDir != null && picturesDir.exists()) {
+            photoDirs.add(picturesDir);
+        }
+        
+        // 从所有目录加载照片（递归扫描，包括子文件夹）
+        for (File photoDir : photoDirs) {
+            if (photoDir != null && photoDir.exists()) {
+                loadPhotosFromDirectory(photoDir, photoList, photosByDate);
+            }
+        }
+        
+        // 按拍摄时间倒序排列（最新的在前面）
+        Collections.sort(photoList, new Comparator<PhotoItem>() {
+            @Override
+            public int compare(PhotoItem p1, PhotoItem p2) {
+                return Long.compare(p2.getTimestamp(), p1.getTimestamp());
+            }
+        });
+        
+        // 去重处理，避免同一张照片在不同目录中重复显示
         Set<String> uniquePaths = new HashSet<>();
         List<PhotoItem> uniquePhotos = new ArrayList<>();
         for (PhotoItem photo : photoList) {
-            // 使用文件名作为去重依据，避免同一照片在两个目录中重复显示
-            String fileName = new File(photo.getPath()).getName();
-            if (!uniquePaths.contains(fileName)) {
-                uniquePaths.add(fileName);
+            // 使用文件路径作为去重依据
+            String photoPath = photo.getPath();
+            if (!uniquePaths.contains(photoPath)) {
+                uniquePaths.add(photoPath);
                 uniquePhotos.add(photo);
             }
         }
         photoList.clear();
         photoList.addAll(uniquePhotos);
+        
+        photoAdapter.notifyDataSetChanged();
+        
+        // 显示照片数量
+        Toast.makeText(this, "找到 " + photoList.size() + " 张照片", Toast.LENGTH_SHORT).show();
+    }
+    
+    // 递归加载目录中的照片
+    private void loadPhotosFromDirectory(File dir, List<PhotoItem> photoList, Map<String, List<PhotoItem>> photosByDate) {
+        if (dir == null || !dir.exists() || !dir.isDirectory()) {
+            return;
+        }
+        
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return;
+        }
+        
+        for (File file : files) {
+            if (file.isDirectory()) {
+                // 递归扫描子目录（包括CameraApp子文件夹）
+                loadPhotosFromDirectory(file, photoList, photosByDate);
+            } else if (file.isFile()) {
+                String fileName = file.getName().toLowerCase(Locale.ROOT);
+                if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+                    PhotoItem photoItem = new PhotoItem(file.getAbsolutePath(), file.lastModified());
+                    photoList.add(photoItem);
+                    
+                    // 按日期分组
+                    String dateKey = getDateKey(file.lastModified());
+                    if (!photosByDate.containsKey(dateKey)) {
+                        photosByDate.put(dateKey, new ArrayList<PhotoItem>());
+                    }
+                    photosByDate.get(dateKey).add(photoItem);
+                }
+            }
+        }
         
         photoAdapter.notifyDataSetChanged();
         

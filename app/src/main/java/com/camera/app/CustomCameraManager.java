@@ -24,7 +24,9 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.content.Intent;
 import android.media.MediaScannerConnection; // 添加媒体扫描连接导入
+import android.net.Uri;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -191,8 +193,28 @@ public class CustomCameraManager {
             if (map != null) {
                 // 获取预览支持的尺寸
                 Size[] previewSizes = map.getOutputSizes(SurfaceTexture.class);
-                previewSize = chooseOptimalPreviewSize(previewSizes, 1920, 1080);
-                Log.d(TAG, "选择预览尺寸: " + previewSize.getWidth() + "x" + previewSize.getHeight());
+                if (previewSizes != null && previewSizes.length > 0) {
+                    // 根据TextureView的尺寸选择预览尺寸，如果没有则使用默认值
+                    int targetWidth = 1920;
+                    int targetHeight = 1080;
+                    
+                    // 尝试获取TextureView的尺寸
+                    if (textureView != null) {
+                        int viewWidth = textureView.getWidth();
+                        int viewHeight = textureView.getHeight();
+                        if (viewWidth > 0 && viewHeight > 0) {
+                            targetWidth = viewWidth;
+                            targetHeight = viewHeight;
+                        }
+                    }
+                    
+                    previewSize = chooseOptimalPreviewSize(previewSizes, targetWidth, targetHeight);
+                    Log.d(TAG, "选择预览尺寸: " + previewSize.getWidth() + "x" + previewSize.getHeight() + 
+                            " (目标: " + targetWidth + "x" + targetHeight + ")");
+                } else {
+                    Log.e(TAG, "没有可用的预览尺寸，使用默认值");
+                    previewSize = new Size(1920, 1080);
+                }
                 
                 // 获取拍照支持的最大尺寸
                 Size[] captureSizes = map.getOutputSizes(ImageFormat.JPEG);
@@ -224,6 +246,21 @@ public class CustomCameraManager {
     public void closeCamera() {
         isCameraOpened = false;
         isCapturing = false; // 重置拍照状态
+        
+        // 先停止预览和闪光灯
+        if (captureSession != null) {
+            try {
+                // 停止所有重复请求（这会关闭闪光灯）
+                captureSession.stopRepeating();
+                // 中止所有进行中的捕获请求
+                captureSession.abortCaptures();
+                Log.d(TAG, "已停止预览和闪光灯");
+            } catch (Exception e) {
+                Log.e(TAG, "停止预览时出错", e);
+            }
+        }
+        
+        // 关闭capture session
         if (captureSession != null) {
             try {
                 captureSession.close();
@@ -232,14 +269,19 @@ public class CustomCameraManager {
             }
             captureSession = null;
         }
+        
+        // 关闭相机设备（这会关闭所有硬件资源，包括闪光灯）
         if (cameraDevice != null) {
             try {
                 cameraDevice.close();
+                Log.d(TAG, "已关闭相机设备");
             } catch (Exception e) {
                 Log.e(TAG, "关闭cameraDevice时出错", e);
             }
             cameraDevice = null;
         }
+        
+        // 关闭image reader
         if (imageReader != null) {
             try {
                 imageReader.close();
@@ -248,6 +290,8 @@ public class CustomCameraManager {
             }
             imageReader = null;
         }
+        
+        Log.d(TAG, "相机和闪光灯已完全关闭");
     }
     
     public void takePicture() {
@@ -309,12 +353,21 @@ public class CustomCameraManager {
                 @Override
                 public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                    Log.d(TAG, "拍照完成");
+                    Log.d(TAG, "拍照完成，准备关闭摄像头和闪光灯");
                     isCapturing = false;
-                    // 拍照完成后重新启动预览（如果在预览模式下）
-                    if (textureView != null) {
-                        restartPreview();
+                    
+                    // 立即停止预览并关闭闪光灯
+                    try {
+                        if (captureSession != null) {
+                            captureSession.stopRepeating();
+                            Log.d(TAG, "已停止预览");
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "停止预览失败", e);
                     }
+                    
+                    // 按照用户要求：拍照完成后立即关闭摄像头和闪光灯
+                    // 关闭相机由MainActivity在显示照片后处理，但先在这里停止预览
                 }
 
                 @Override
@@ -322,9 +375,6 @@ public class CustomCameraManager {
                     super.onCaptureFailed(session, request, failure);
                     Log.e(TAG, "拍照失败: " + failure.getReason());
                     isCapturing = false;
-                    if (textureView != null) {
-                        restartPreview();
-                    }
                     if (captureCallback != null) {
                         captureCallback.onCaptureError(new Exception("拍照失败: " + failure.getReason()));
                     }
@@ -341,24 +391,14 @@ public class CustomCameraManager {
                     super.onCaptureSequenceAborted(session, sequenceId);
                     Log.e(TAG, "拍照序列被中止");
                     isCapturing = false;
-                    if (textureView != null) {
-                        restartPreview();
-                    }
                     if (captureCallback != null) {
                         captureCallback.onCaptureError(new Exception("拍照序列被中止"));
                     }
                 }
             };
 
-            // 先停止预览（仅在有预览时）
-            if (textureView != null) {
-                try {
-                    captureSession.stopRepeating();
-                    captureSession.abortCaptures();
-                } catch (CameraAccessException e) {
-                    Log.e(TAG, "停止预览失败", e);
-                }
-            }
+            // 拍照时不停止预览，让预览继续显示直到拍照完成
+            // 这样用户可以一直看到预览画面
 
             captureSession.capture(captureBuilder.build(), captureListener, backgroundHandler);
             Log.d(TAG, "已发送拍照请求");
@@ -375,6 +415,11 @@ public class CustomCameraManager {
                 captureCallback.onCaptureError(e);
             }
         }
+    }
+    
+    // 公共方法：为了闪光灯切换而重启预览
+    public void restartPreviewForFlash() {
+        restartPreview();
     }
     
     // 拍照完成后重新启动预览
@@ -685,22 +730,41 @@ public class CustomCameraManager {
                 Log.d(TAG, "图片保存成功");
                 savedFile = file;
                 
-                // 通知媒体扫描器有新文件
+                // 通知媒体扫描器有新文件（确保照片在系统图库中可见）
                 try {
                     MediaScannerConnection.scanFile(context,
                             new String[]{file.getAbsolutePath()},
                             new String[]{"image/jpeg"},
-                            null);
-                    Log.d(TAG, "已通知媒体扫描器扫描新文件");
+                            new MediaScannerConnection.OnScanCompletedListener() {
+                                @Override
+                                public void onScanCompleted(String path, Uri uri) {
+                                    if (uri != null) {
+                                        Log.d(TAG, "媒体扫描完成，照片已添加到系统图库: " + uri);
+                                    } else {
+                                        Log.w(TAG, "媒体扫描完成，但URI为空: " + path);
+                                    }
+                                }
+                            });
+                    Log.d(TAG, "已通知媒体扫描器扫描新文件: " + file.getAbsolutePath());
                 } catch (Exception e) {
                     Log.e(TAG, "通知媒体扫描器失败", e);
+                    // 如果MediaScannerConnection失败，尝试使用广播（兼容旧版本）
+                    try {
+                        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        Uri contentUri = Uri.fromFile(file);
+                        mediaScanIntent.setData(contentUri);
+                        context.sendBroadcast(mediaScanIntent);
+                        Log.d(TAG, "已发送媒体扫描广播: " + file.getAbsolutePath());
+                    } catch (Exception ex) {
+                        Log.e(TAG, "发送媒体扫描广播失败", ex);
+                    }
                 }
                 
-                // 将图片转换为Bitmap并传递给预览显示回调
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                if (previewDisplayCallback != null) {
-                    previewDisplayCallback.onPreviewDisplay(bitmap);
-                }
+                // 不再通过预览显示回调传递图片，直接通过文件路径通知
+                // Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                // if (previewDisplayCallback != null) {
+                //     previewDisplayCallback.onPreviewDisplay(bitmap);
+                // }
                 
                 // 通知回调拍照成功
                 if (captureCallback != null && savedFile != null) {
@@ -728,16 +792,8 @@ public class CustomCameraManager {
                     }
                 }
                 
-                // 拍照完成后重新启动预览（如果textureView不为null）
-                // 使用post方法确保在后台线程中执行
-                if (textureView != null && backgroundHandler != null) {
-                    backgroundHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            restartPreview();
-                        }
-                    });
-                }
+                // 按照用户要求：拍照完成后关闭摄像头，不在这里重启预览
+                // 关闭相机由MainActivity在显示照片后处理
             }
         }
     }
@@ -752,50 +808,94 @@ public class CustomCameraManager {
     
     // 创建公共目录的照片文件（用于系统相册显示）
     private File createPublicImageFile() {
-        // 创建图片文件在公共图片目录中
+        // 创建图片文件在公共图片目录中的独立子文件夹
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String imageFileName = "IMG_" + timeStamp + ".jpg";
-        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        File imageFile = new File(storageDir, imageFileName);
+        
+        // 在Pictures目录下创建应用专用的子文件夹
+        File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File appPhotoDir = new File(picturesDir, "CameraApp");
         
         // 确保目录存在
-        if (!storageDir.exists()) {
-            storageDir.mkdirs();
+        if (!appPhotoDir.exists()) {
+            boolean created = appPhotoDir.mkdirs();
+            if (created) {
+                Log.d(TAG, "创建应用照片目录: " + appPhotoDir.getAbsolutePath());
+            } else {
+                Log.w(TAG, "无法创建应用照片目录: " + appPhotoDir.getAbsolutePath());
+            }
         }
         
+        File imageFile = new File(appPhotoDir, imageFileName);
         return imageFile;
     }
     
     // 选择使用哪个目录保存照片
     private File getTargetImageFile() {
-        // 默认保存到应用私有目录
-        File privateFile = createImageFile();
-        
-        // 如果需要在系统相册中显示，也保存一份到公共目录
+        // 保存到公共目录的独立子文件夹（系统相册可见）
         try {
             File publicFile = createPublicImageFile();
             return publicFile;
         } catch (Exception e) {
             Log.e(TAG, "无法创建公共目录文件，使用私有目录", e);
-            return privateFile;
+            // 如果公共目录失败，使用私有目录作为后备
+            return createImageFile();
         }
     }
     
-    // 选择最优预览尺寸
+    // 选择最优预览尺寸（改进版，兼容更多设备）
     private Size chooseOptimalPreviewSize(Size[] choices, int width, int height) {
+        if (choices == null || choices.length == 0) {
+            Log.e(TAG, "没有可用的预览尺寸");
+            return new Size(1920, 1080); // 默认尺寸
+        }
+        
+        // 按面积排序所有尺寸
+        List<Size> sortedSizes = new ArrayList<>(Arrays.asList(choices));
+        Collections.sort(sortedSizes, new CompareSizesByArea());
+        
+        // 计算目标宽高比（允许一定的容差）
+        double targetAspectRatio = (double) width / height;
+        double aspectRatioTolerance = 0.1; // 10%容差
+        
+        // 优先选择宽高比匹配且足够大的尺寸
         List<Size> bigEnough = new ArrayList<>();
-        for (Size option : choices) {
-            if (option.getHeight() == option.getWidth() * height / width &&
-                    option.getWidth() >= width && option.getHeight() >= height) {
+        for (Size option : sortedSizes) {
+            double aspectRatio = (double) option.getWidth() / option.getHeight();
+            if (Math.abs(aspectRatio - targetAspectRatio) <= aspectRatioTolerance &&
+                    option.getWidth() >= width * 0.8 && option.getHeight() >= height * 0.8) {
                 bigEnough.add(option);
             }
         }
         
         if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
-        } else {
-            return choices[0];
+            // 选择最小的足够大的尺寸（节省性能）
+            Size selected = Collections.min(bigEnough, new CompareSizesByArea());
+            Log.d(TAG, "选择预览尺寸（宽高比匹配）: " + selected.getWidth() + "x" + selected.getHeight());
+            return selected;
         }
+        
+        // 如果没有宽高比匹配的，选择最接近目标尺寸的
+        Size bestSize = null;
+        long minDiff = Long.MAX_VALUE;
+        for (Size option : sortedSizes) {
+            // 选择宽度和高度都接近目标值的尺寸
+            long diff = Math.abs(option.getWidth() - width) + Math.abs(option.getHeight() - height);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestSize = option;
+            }
+        }
+        
+        if (bestSize != null) {
+            Log.d(TAG, "选择预览尺寸（最接近）: " + bestSize.getWidth() + "x" + bestSize.getHeight());
+            return bestSize;
+        }
+        
+        // 最后的选择：使用最大的尺寸（通常是1920x1080或更高）
+        Size largest = Collections.max(sortedSizes, new CompareSizesByArea());
+        Log.d(TAG, "选择预览尺寸（最大尺寸）: " + largest.getWidth() + "x" + largest.getHeight());
+        return largest;
     }
     
     private static class CompareSizesByArea implements Comparator<Size> {
