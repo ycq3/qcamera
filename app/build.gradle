@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.camera.app'
+    namespace 'com.pipiqiang.qcamera'
     compileSdk 32
 
     defaultConfig {
-        applicationId "com.camera.app"
+        applicationId "com.pipiqiang.qcamera"
         minSdk 24
         targetSdk 32
         versionCode 1

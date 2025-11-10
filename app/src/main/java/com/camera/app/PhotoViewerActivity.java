@@ -1,4 +1,5 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
+import com.pipiqiang.qcamera.R;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

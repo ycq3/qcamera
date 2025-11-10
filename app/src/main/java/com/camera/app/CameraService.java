@@ -1,4 +1,5 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
+import com.pipiqiang.qcamera.R;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -20,10 +21,10 @@ public class CameraService extends Service {
     
     private static final String TAG = "CameraService";
     
-    public static final String ACTION_START_CAPTURE = "com.camera.app.action.START_CAPTURE";
-    public static final String ACTION_STOP_CAPTURE = "com.camera.app.action.STOP_CAPTURE";
-    public static final String ACTION_CAPTURE_COMPLETED = "com.camera.app.action.CAPTURE_COMPLETED";
-    public static final String ACTION_SHOW_LAST_IMAGE = "com.camera.app.action.SHOW_LAST_IMAGE"; // 新增广播动作
+    public static final String ACTION_START_CAPTURE = "com.pipiqiang.qcamera.action.START_CAPTURE";
+    public static final String ACTION_STOP_CAPTURE = "com.pipiqiang.qcamera.action.STOP_CAPTURE";
+    public static final String ACTION_CAPTURE_COMPLETED = "com.pipiqiang.qcamera.action.CAPTURE_COMPLETED";
+    public static final String ACTION_SHOW_LAST_IMAGE = "com.pipiqiang.qcamera.action.SHOW_LAST_IMAGE"; // 新增广播动作
     
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "CameraServiceChannel";
@@ -100,7 +101,7 @@ public class CameraService extends Service {
         }
         
         // 发送广播通知MainActivity服务已启动
-        Intent statusIntent = new Intent("com.camera.app.SERVICE_STATUS");
+        Intent statusIntent = new Intent("com.pipiqiang.qcamera.SERVICE_STATUS");
         statusIntent.putExtra("isRunning", true);
         sendBroadcast(statusIntent);
         
@@ -121,7 +122,7 @@ public class CameraService extends Service {
         }
         
         // 发送广播通知MainActivity服务已停止
-        Intent statusIntent = new Intent("com.camera.app.SERVICE_STATUS");
+        Intent statusIntent = new Intent("com.pipiqiang.qcamera.SERVICE_STATUS");
         statusIntent.putExtra("isRunning", false);
         sendBroadcast(statusIntent);
         
@@ -136,7 +137,7 @@ public class CameraService extends Service {
         }
         
         // 发送计数重置广播
-        Intent countResetIntent = new Intent("com.camera.app.COUNT_RESET");
+        Intent countResetIntent = new Intent("com.pipiqiang.qcamera.COUNT_RESET");
         sendBroadcast(countResetIntent);
         
         // 停止前台服务

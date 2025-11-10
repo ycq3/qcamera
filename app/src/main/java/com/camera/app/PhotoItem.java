@@ -1,4 +1,4 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
 
 public class PhotoItem {
     private String path;

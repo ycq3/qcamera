@@ -39,10 +39,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CameraApp"
         tools:targetApi="31">
+        <meta-data
+            android:name="author"
+            android:value="pipiqiang（皮皮强）" />
         
         <!-- 主活动 -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.pipiqiang.qcamera.app.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.CameraApp.NoActionBar">
             <intent-filter>
@@ -53,40 +56,40 @@
         
         <!-- 设置活动 -->
         <activity
-            android:name=".SettingsActivity"
+            android:name="com.pipiqiang.qcamera.app.SettingsActivity"
             android:exported="false"
             android:label="@string/title_activity_settings"
             android:theme="@style/Theme.CameraApp" />
         
         <!-- 照片库活动 -->
         <activity
-            android:name=".PhotoGalleryActivity"
+            android:name="com.pipiqiang.qcamera.app.PhotoGalleryActivity"
             android:exported="false"
             android:label="照片库"
             android:theme="@style/Theme.CameraApp" />
             
         <!-- 照片查看器活动 -->
         <activity
-            android:name=".PhotoViewerActivity"
+            android:name="com.pipiqiang.qcamera.app.PhotoViewerActivity"
             android:exported="false"
             android:label="查看照片"
             android:theme="@style/Theme.CameraApp" />
         
         <!-- 拍照服务 -->
         <service
-            android:name=".CameraService"
+            android:name="com.pipiqiang.qcamera.app.CameraService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="camera" />
             
         <!-- 照片处理服务 -->
         <service
-            android:name=".PhotoProcessingService"
+            android:name="com.pipiqiang.qcamera.app.PhotoProcessingService"
             android:enabled="true"
             android:exported="false" />
             
         <!-- 开机广播接收器 -->
-        <receiver android:name=".BootReceiver"
+        <receiver android:name="com.pipiqiang.qcamera.app.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter android:priority="1000">

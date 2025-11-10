@@ -1,4 +1,5 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
+import com.pipiqiang.qcamera.R;
 
 import android.Manifest;
 import android.app.AlertDialog;
@@ -118,9 +119,9 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         }
         
         // 也添加公共图片根目录（兼容旧照片，如果有的话）
-        if (picturesDir != null && picturesDir.exists()) {
-            photoDirs.add(picturesDir);
-        }
+        //if (picturesDir != null && picturesDir.exists()) {
+            // photoDirs.add(picturesDir);
+        //}
         
         // 从所有目录加载照片（递归扫描，包括子文件夹）
         for (File photoDir : photoDirs) {

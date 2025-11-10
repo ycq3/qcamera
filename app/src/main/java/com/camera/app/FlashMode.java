@@ -1,4 +1,4 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
 
 public enum FlashMode {
     OFF,

@@ -1,4 +1,4 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

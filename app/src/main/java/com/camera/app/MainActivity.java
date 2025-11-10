@@ -1,4 +1,5 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
+import com.pipiqiang.qcamera.R;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
@@ -111,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if ("com.camera.app.SERVICE_STATUS".equals(action)) {
+            if ("com.pipiqiang.qcamera.SERVICE_STATUS".equals(action)) {
                 boolean isServiceRunning = intent.getBooleanExtra("isRunning", false);
                 updateUI(isServiceRunning);
             }
@@ -123,15 +124,15 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if ("com.camera.app.action.CAPTURE_COMPLETED".equals(action)) {
+            if ("com.pipiqiang.qcamera.action.CAPTURE_COMPLETED".equals(action)) {
                 // 更新计数器显示
                 updateCaptureCountDisplay();
                 // 照片已在onCaptureSuccess中显示，相机已关闭
                 // 下一次拍照周期已在onCaptureSuccess中调度
-            } else if ("com.camera.app.COUNT_RESET".equals(action)) {
+            } else if ("com.pipiqiang.qcamera.COUNT_RESET".equals(action)) {
                 // 计数器重置
                 updateCaptureCountDisplay();
-            } else if ("com.camera.app.action.SHOW_LAST_IMAGE".equals(action)) {
+            } else if ("com.pipiqiang.qcamera.action.SHOW_LAST_IMAGE".equals(action)) {
                 // 这个广播已经不再使用，照片显示在onCaptureSuccess中处理
             }
         }
@@ -162,14 +163,14 @@ public class MainActivity extends AppCompatActivity {
         setupListeners();
         
         // 注册广播接收器
-        IntentFilter filter = new IntentFilter("com.camera.app.SERVICE_STATUS");
+        IntentFilter filter = new IntentFilter("com.pipiqiang.qcamera.SERVICE_STATUS");
         registerReceiver(serviceStatusReceiver, filter);
         
         // 注册拍照完成广播接收器
         IntentFilter captureFilter = new IntentFilter();
-        captureFilter.addAction("com.camera.app.action.CAPTURE_COMPLETED");
-        captureFilter.addAction("com.camera.app.COUNT_RESET");
-        captureFilter.addAction("com.camera.app.action.SHOW_LAST_IMAGE"); // 添加新动作
+        captureFilter.addAction("com.pipiqiang.qcamera.action.CAPTURE_COMPLETED");
+        captureFilter.addAction("com.pipiqiang.qcamera.COUNT_RESET");
+        captureFilter.addAction("com.pipiqiang.qcamera.action.SHOW_LAST_IMAGE"); // 添加新动作
         registerReceiver(captureCompletedReceiver, captureFilter);
         
         // 检查必要权限
@@ -956,7 +957,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         
                         // 发送广播通知拍照完成（用于更新计数器显示）
-                        Intent captureCompletedIntent = new Intent("com.camera.app.action.CAPTURE_COMPLETED");
+        Intent captureCompletedIntent = new Intent("com.pipiqiang.qcamera.action.CAPTURE_COMPLETED");
                         captureCompletedIntent.putExtra("photoPath", imagePath);
                         sendBroadcast(captureCompletedIntent);
                         

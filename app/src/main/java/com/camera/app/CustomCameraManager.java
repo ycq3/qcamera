@@ -1,4 +1,4 @@
-package com.camera.app;
+package com.pipiqiang.qcamera.app;
 
 import android.content.Context;
 import android.graphics.Bitmap;
