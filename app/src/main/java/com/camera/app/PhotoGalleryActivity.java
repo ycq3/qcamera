@@ -292,14 +292,48 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
         Toast.makeText(this, "照片已删除", Toast.LENGTH_SHORT).show();
         exitSelectionMode();
     }
+
+    // 上传选中的照片到云端
+    private void uploadSelectedPhotos() {
+        java.util.List<String> paths = photoAdapter.getSelectedPhotoPaths();
+        if (paths == null || paths.isEmpty()) return;
+        Toast.makeText(this, "开始上传 " + paths.size() + " 张照片", Toast.LENGTH_SHORT).show();
+
+        new android.os.AsyncTask<Void, Integer, Integer>() {
+            @Override
+            protected Integer doInBackground(Void... voids) {
+                SettingsManager sm = new SettingsManager(PhotoGalleryActivity.this);
+                int success = 0;
+                for (String p : paths) {
+                    try {
+                        CloudUploadHelper.upload(PhotoGalleryActivity.this, sm, p);
+                        success++;
+                    } catch (Exception e) {
+                        android.util.Log.e("PhotoGallery", "上传失败: " + p, e);
+                    }
+                }
+                return success;
+            }
+
+            @Override
+            protected void onPostExecute(Integer success) {
+                Toast.makeText(PhotoGalleryActivity.this, "上传完成，成功 " + success + "/" + paths.size(), Toast.LENGTH_LONG).show();
+                exitSelectionMode();
+                // 刷新列表（可能删除了源文件）
+                loadPhotos();
+            }
+        }.executeOnExecutor(android.os.AsyncTask.THREAD_POOL_EXECUTOR);
+    }
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.gallery_menu, menu);
         deleteMenuItem = menu.findItem(R.id.action_delete);
         selectAllMenuItem = menu.findItem(R.id.action_select_all);
+        MenuItem uploadItem = menu.findItem(R.id.action_upload);
         deleteMenuItem.setVisible(isSelectionMode);
         selectAllMenuItem.setVisible(isSelectionMode);
+        if (uploadItem != null) uploadItem.setVisible(isSelectionMode);
         return true;
     }
     
@@ -325,6 +359,9 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
                 return true;
             case R.id.action_delete:
                 showDeleteConfirmationDialog();
+                return true;
+            case R.id.action_upload:
+                uploadSelectedPhotos();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

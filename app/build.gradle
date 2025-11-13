@@ -39,6 +39,16 @@ android {
     buildFeatures {
         viewBinding true
     }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/NOTICE.md', 'META-INF/LICENSE.md', 'META-INF/NOTICE', 'META-INF/LICENSE', 'META-INF/DEPENDENCIES', 'META-INF/NOTICE.txt', 'META-INF/LICENSE.txt']
+        }
+    }
     
     // 禁用Lint检查
     lint {
@@ -66,4 +76,20 @@ dependencies {
     // 显式指定lifecycle版本以避免冲突
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
+
+    // JavaMail for Android (SMTP/TLS/SSL)
+    implementation 'com.sun.mail:android-mail:1.6.7'
+    implementation 'com.sun.mail:android-activation:1.6.7'
+
+    // AWS S3 Android SDK (云存储-S3)
+    implementation 'com.amazonaws:aws-android-sdk-core:2.16.12'
+    implementation 'com.amazonaws:aws-android-sdk-s3:2.16.12'
+    // WebDAV上传使用OkHttp
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
+
+    // 测试依赖
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:4.11.0'
+    testImplementation 'org.robolectric:robolectric:4.10.3'
+    testImplementation 'androidx.test:core:1.5.0'
 }

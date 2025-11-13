@@ -15,5 +15,12 @@
         android:icon="@android:drawable/ic_menu_delete"
         app:showAsAction="ifRoom"
         android:visible="false" />
+
+    <item
+        android:id="@+id/action_upload"
+        android:title="上传到云端"
+        android:icon="@android:drawable/ic_menu_upload"
+        app:showAsAction="ifRoom"
+        android:visible="false" />
         
 </menu>

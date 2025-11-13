@@ -67,4 +67,95 @@
         <item>75</item>
         <item>50</item>
     </string-array>
+    <string name="pref_header_cloud_storage">云存储</string>
+    <string name="pref_header_smtp">SMTP配置</string>
+
+    <!-- Cloud storage -->
+    <string name="pref_title_cloud_enabled">启用云存储</string>
+    <string name="pref_title_cloud_provider">云服务提供商</string>
+    <string name="pref_title_cloud_access_key">Access Key</string>
+    <string name="pref_title_cloud_secret_key">Secret Key</string>
+    <string name="pref_title_cloud_region">Region</string>
+    <string name="pref_title_cloud_bucket">Bucket</string>
+    <string name="pref_title_cloud_endpoint">自定义Endpoint（可选）</string>
+    <string name="pref_title_cloud_encryption">传输加密（HTTPS/TLS）</string>
+    <string name="pref_title_cloud_resumable">断点续传</string>
+
+    <string-array name="cloud_provider_entries">
+        <item>AWS S3</item>
+        <item>Google Cloud Storage</item>
+        <item>Azure Blob Storage</item>
+        <item>阿里云 OSS</item>
+        <item>腾讯云 COS</item>
+        <item>WebDAV</item>
+        <item>关闭</item>
+    </string-array>
+    <string-array name="cloud_provider_values">
+        <item>s3</item>
+        <item>gcs</item>
+        <item>azure</item>
+        <item>oss</item>
+        <item>cos</item>
+        <item>webdav</item>
+        <item>none</item>
+    </string-array>
+
+    <string name="pref_title_cloud_auto_upload">拍照后自动上传</string>
+    <string name="pref_title_cloud_delete_on_success">上传成功后删除本地文件</string>
+    <string name="pref_title_cloud_path_prefix">上传路径前缀</string>
+
+    <string name="pref_title_cloud_test_connection">测试连接</string>
+    <string name="cloud_test_connecting">正在测试连接…</string>
+    <string name="cloud_test_success">连接成功</string>
+    <string name="cloud_test_failed">连接失败：%1$s</string>
+
+    <string name="cloud_label_username">用户名</string>
+    <string name="cloud_label_password">密码</string>
+    <string name="cloud_label_region">Region</string>
+    <string name="cloud_label_bucket">Bucket</string>
+    <string name="cloud_label_endpoint">基地址</string>
+    <string name="cloud_label_path_prefix">路径前缀</string>
+    <string name="cloud_label_container">容器</string>
+    <string name="cloud_label_secret_id">SecretId</string>
+
+    <!-- SMTP settings -->
+    <string name="pref_title_smtp_enabled">启用SMTP邮件发送</string>
+    <string name="pref_title_smtp_host">SMTP服务器地址</string>
+    <string name="pref_title_smtp_port">SMTP端口</string>
+    <string name="pref_title_smtp_username">用户名</string>
+    <string name="pref_title_smtp_password">密码</string>
+    <string name="pref_title_smtp_encryption">加密方式</string>
+    <string name="pref_title_smtp_auth_method">认证方式</string>
+    <string name="pref_title_smtp_from">发件人邮箱</string>
+    <string name="pref_title_smtp_html">HTML格式</string>
+    <string name="pref_title_smtp_retry_count">失败重试次数</string>
+    <string name="pref_title_smtp_retry_backoff">重试间隔（秒）</string>
+
+    <string-array name="smtp_encryption_entries">
+        <item>不加密</item>
+        <item>TLS</item>
+        <item>SSL</item>
+    </string-array>
+    <string-array name="smtp_encryption_values">
+        <item>none</item>
+        <item>tls</item>
+        <item>ssl</item>
+    </string-array>
+    <string-array name="smtp_auth_entries">
+        <item>PLAIN</item>
+        <item>LOGIN</item>
+        <item>CRAM-MD5</item>
+    </string-array>
+    <string-array name="smtp_auth_values">
+        <item>plain</item>
+        <item>login</item>
+        <item>cram_md5</item>
+    </string-array>
+
+
+    <string name="pref_title_smtp_test">测试发送邮件</string>
+    <string name="smtp_test_sending">正在发送测试邮件…</string>
+    <string name="smtp_test_success">测试邮件已发送</string>
+    <string name="smtp_test_failed">测试邮件失败：%1$s</string>
+    <string name="smtp_test_missing_recipient">请先在“发件人邮箱”或“邮箱地址”中填写收件地址</string>
 </resources>

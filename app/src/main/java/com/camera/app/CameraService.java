@@ -336,7 +336,7 @@ public class CameraService extends Service {
         return photoPath[0];
     }
     
-    private void processPicture(String photoPath, SettingsManager settingsManager, 
+    private void processPicture(String photoPath, SettingsManager settingsManager,
                                StorageManager storageManager, EmailManager emailManager) {
         if (photoPath == null || photoPath.isEmpty()) {
             Log.e(TAG, "照片路径为空");
@@ -363,6 +363,19 @@ public class CameraService extends Service {
             // 照片已保存到默认位置，无需额外操作
             Log.d(TAG, "照片已保存到: " + photoPath);
         }
+
+        // 云存储自动上传与成功后删除
+        if (settingsManager.isCloudEnabled() && settingsManager.isCloudAutoUploadEnabled()) {
+            try {
+                performCloudUpload(photoPath, settingsManager);
+            } catch (Exception e) {
+                Log.e(TAG, "云上传失败", e);
+            }
+        }
+    }
+
+    private void performCloudUpload(String photoPath, SettingsManager settingsManager) throws Exception {
+        CloudUploadHelper.upload(this, settingsManager, photoPath);
     }
     
     private void checkAndCleanStorage(SettingsManager settingsManager, StorageManager storageManager) {

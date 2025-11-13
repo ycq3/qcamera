@@ -38,6 +38,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CameraApp"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <meta-data
             android:name="author"

@@ -84,4 +84,168 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/pref_header_cloud_storage">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="cloud_enabled"
+            app:title="@string/pref_title_cloud_enabled" />
+
+        <ListPreference
+            app:defaultValue="none"
+            app:entries="@array/cloud_provider_entries"
+            app:entryValues="@array/cloud_provider_values"
+            app:key="cloud_provider"
+            app:title="@string/pref_title_cloud_provider"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <EditTextPreference
+            app:key="cloud_access_key"
+            app:title="@string/pref_title_cloud_access_key"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <EditTextPreference
+            app:key="cloud_secret_key"
+            app:title="@string/pref_title_cloud_secret_key"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <EditTextPreference
+            app:key="cloud_region"
+            app:title="@string/pref_title_cloud_region"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <EditTextPreference
+            app:key="cloud_bucket"
+            app:title="@string/pref_title_cloud_bucket"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <EditTextPreference
+            app:key="cloud_endpoint"
+            app:title="@string/pref_title_cloud_endpoint"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="cloud_encryption_enabled"
+            app:title="@string/pref_title_cloud_encryption"
+            app:dependency="cloud_enabled" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="cloud_resumable_enabled"
+            app:title="@string/pref_title_cloud_resumable"
+            app:dependency="cloud_enabled" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="cloud_auto_upload"
+            app:title="@string/pref_title_cloud_auto_upload"
+            app:dependency="cloud_enabled" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="cloud_delete_on_success"
+            app:title="@string/pref_title_cloud_delete_on_success"
+            app:dependency="cloud_enabled" />
+
+        <EditTextPreference
+            app:defaultValue="photos"
+            app:key="cloud_path_prefix"
+            app:title="@string/pref_title_cloud_path_prefix"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="cloud_enabled" />
+
+        <Preference
+            app:key="cloud_test_connection"
+            app:title="@string/pref_title_cloud_test_connection"
+            app:dependency="cloud_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_header_smtp">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="smtp_enabled"
+            app:title="@string/pref_title_smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_host"
+            app:title="@string/pref_title_smtp_host"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_port"
+            app:title="@string/pref_title_smtp_port"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_username"
+            app:title="@string/pref_title_smtp_username"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_password"
+            app:title="@string/pref_title_smtp_password"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <ListPreference
+            app:defaultValue="tls"
+            app:entries="@array/smtp_encryption_entries"
+            app:entryValues="@array/smtp_encryption_values"
+            app:key="smtp_encryption"
+            app:title="@string/pref_title_smtp_encryption"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <ListPreference
+            app:defaultValue="login"
+            app:entries="@array/smtp_auth_entries"
+            app:entryValues="@array/smtp_auth_values"
+            app:key="smtp_auth_method"
+            app:title="@string/pref_title_smtp_auth_method"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_from"
+            app:title="@string/pref_title_smtp_from"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="smtp_html_enabled"
+            app:title="@string/pref_title_smtp_html"
+            app:dependency="smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_retry_count"
+            app:title="@string/pref_title_smtp_retry_count"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <EditTextPreference
+            app:key="smtp_retry_backoff"
+            app:title="@string/pref_title_smtp_retry_backoff"
+            app:useSimpleSummaryProvider="true"
+            app:dependency="smtp_enabled" />
+
+        <Preference
+            app:key="smtp_test_email"
+            app:title="@string/pref_title_smtp_test"
+            app:dependency="smtp_enabled" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
