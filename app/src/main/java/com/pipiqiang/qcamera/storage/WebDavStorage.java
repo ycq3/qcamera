@@ -2,7 +2,7 @@ package com.pipiqiang.qcamera.storage;
 
 import android.content.Context;
 import android.util.Base64;
-
+import android.util.Log;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -38,14 +38,22 @@ public class WebDavStorage implements CloudStorage {
     @Override
     public String upload(String key, File file) throws Exception {
         String url = buildUrl(key);
+        ensureParentDirectories(key);
         MediaType octet = MediaType.parse("application/octet-stream");
-        RequestBody body = RequestBody.create(file, octet);
+        okhttp3.RequestBody body;
+        com.pipiqiang.qcamera.app.UploadProgressBus.Listener busListener = com.pipiqiang.qcamera.app.UploadProgressBus.get(key);
+        if (busListener != null) {
+            body = new ProgressRequestBody(file, octet, (w, t) -> busListener.onProgress(key, w, t));
+        } else {
+            body = okhttp3.RequestBody.create(file, octet);
+        }
         Request request = new Request.Builder()
                 .url(url)
                 .put(body)
                 .header("Authorization", Credentials.basic(username == null ? "" : username, password == null ? "" : password))
                 .build();
         try (Response resp = client.newCall(request).execute()) {
+            Log.d("WebDavStorage", "key: " + key + " upload: " + url+" Response:"+resp.body().string());
             if (!resp.isSuccessful()) {
                 throw new RuntimeException("WebDAV upload failed: " + resp.code() + " " + resp.message());
             }
@@ -163,5 +171,41 @@ public class WebDavStorage implements CloudStorage {
         if (a.endsWith("/")) a = a.replaceAll("/+$", "");
         if (b.startsWith("/")) b = b.replaceAll("^/+", "");
         return a + "/" + b;
+    }
+
+    private void ensureParentDirectories(String key) throws Exception {
+        String sanitizedKey = sanitizeSegment(key);
+        int idx = sanitizedKey.lastIndexOf('/');
+        if (idx < 0) return;
+        String dirPath = sanitizedKey.substring(0, idx);
+        String[] parts = dirPath.split("/");
+        String base = baseUrl;
+        if (bucketPath != null && !bucketPath.isEmpty()) {
+            base = join(base, bucketPath);
+        }
+        String current = base;
+        for (String part : parts) {
+            if (part == null || part.isEmpty()) continue;
+            current = join(current, part);
+            Request mkcol = new Request.Builder()
+                    .url(current)
+                    .method("MKCOL", RequestBody.create(new byte[0], MediaType.parse("text/plain")))
+                    .header("Authorization", Credentials.basic(username == null ? "" : username, password == null ? "" : password))
+                    .build();
+            try (Response r = client.newCall(mkcol).execute()) {
+                int code = r.code();
+                if (code == 201 || code == 200) {
+                    continue;
+                } else if (code == 405) {
+                    continue;
+                } else if (code == 409) {
+                    throw new RuntimeException("父目录不存在或路径无效: " + current);
+                } else if (code == 401 || code == 403) {
+                    throw new RuntimeException("目录创建权限不足: " + code + " " + r.message());
+                } else if (!r.isSuccessful()) {
+                    throw new RuntimeException("创建目录失败: " + code + " " + r.message());
+                }
+            }
+        }
     }
 }

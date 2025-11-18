@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Build;
+import android.app.KeyguardManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -179,6 +180,7 @@ public class CameraService extends Service {
                 CustomCameraManager cameraManager = null;
                 try {
                     Log.d(TAG, "开始执行拍照任务 - 当前摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
+                    ensureDeviceReadyForCamera();
                     
                     // 初始化管理器
                     cameraManager = new CustomCameraManager(CameraService.this);
@@ -335,6 +337,31 @@ public class CameraService extends Service {
         Log.d(TAG, "返回照片路径: " + photoPath[0]);
         return photoPath[0];
     }
+
+    private void ensureDeviceReadyForCamera() {
+        try {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            boolean interactive = pm != null && pm.isInteractive();
+            boolean keyguardLocked = km != null && km.isKeyguardLocked();
+            Log.d(TAG, "设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
+
+            if (!interactive || keyguardLocked) {
+                PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "CameraApp::PreCaptureWake");
+                wl.acquire(5_000);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ignored) {}
+                if (wl.isHeld()) wl.release();
+                // 重新评估状态，仅用于日志
+                interactive = pm.isInteractive();
+                keyguardLocked = km.isKeyguardLocked();
+                Log.d(TAG, "唤醒后设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "确保设备就绪时发生异常", e);
+        }
+    }
     
     private void processPicture(String photoPath, SettingsManager settingsManager,
                                StorageManager storageManager, EmailManager emailManager) {
@@ -364,12 +391,20 @@ public class CameraService extends Service {
             Log.d(TAG, "照片已保存到: " + photoPath);
         }
 
-        // 云存储自动上传与成功后删除
+        // 云存储自动上传：改为使用 WorkManager，保证后台与网络约束下可靠执行
         if (settingsManager.isCloudEnabled() && settingsManager.isCloudAutoUploadEnabled()) {
             try {
-                performCloudUpload(photoPath, settingsManager);
+                androidx.work.OneTimeWorkRequest req = new androidx.work.OneTimeWorkRequest.Builder(com.pipiqiang.qcamera.app.CloudUploadWorker.class)
+                        .setInputData(new androidx.work.Data.Builder()
+                                .putString(com.pipiqiang.qcamera.app.CloudUploadWorker.KEY_PHOTO_PATH, photoPath)
+                                .build())
+                        .setConstraints(com.pipiqiang.qcamera.app.CloudUploadWorker.connectedNetworkConstraints())
+                        .addTag(com.pipiqiang.qcamera.app.CloudUploadWorker.TAG_UPLOAD_WORK)
+                        .build();
+                androidx.work.WorkManager.getInstance(getApplicationContext()).enqueue(req);
+                Log.d(TAG, "已提交自动上传任务: " + photoPath);
             } catch (Exception e) {
-                Log.e(TAG, "云上传失败", e);
+                Log.e(TAG, "提交自动上传任务失败", e);
             }
         }
     }

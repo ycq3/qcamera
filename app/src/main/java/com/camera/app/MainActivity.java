@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout appIconContainer; // 图标容器
     private TextView tvCaptureCount; // 拍照计数器显示
     private TextView tvCaptureTime; // 拍摄时间显示
+    private TextView tvUploadStatus; // 上传状态显示
     private boolean isRunning = false;
     
     // 相机预览相关
@@ -161,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
         
         initViews();
         setupListeners();
+        setupUploadStatusObserver();
         
         // 注册广播接收器
         IntentFilter filter = new IntentFilter("com.pipiqiang.qcamera.SERVICE_STATUS");
@@ -209,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
         ivCapturedImage = findViewById(R.id.iv_captured_image); // 初始化ImageView
         btnFlashIndicator = findViewById(R.id.btn_flash_indicator);
         tvCaptureTime = findViewById(R.id.tv_capture_time); // 初始化拍摄时间显示
+        tvUploadStatus = findViewById(R.id.tv_upload_status); // 初始化上传状态显示
     }
     
     private void setupListeners() {
@@ -1057,6 +1060,12 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         Log.w(TAG, "tvCaptureTime为null，无法显示时间");
                     }
+
+                    if (tvUploadStatus != null) {
+                        tvUploadStatus.setVisibility(View.VISIBLE);
+                        updateUploadStatus();
+                        tvUploadStatus.bringToFront();
+                    }
                     
                     // 确保ImageView在TextureView之上，时间文本在ImageView之上
                     ivCapturedImage.bringToFront();
@@ -1072,7 +1081,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
     }
-
+    
     // 显示上次拍摄的照片
     private void showLastCapturedImage(String photoPath) {
         Log.d(TAG, "显示上次拍摄的照片: " + photoPath);
@@ -1113,6 +1122,12 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             Log.w(TAG, "tvCaptureTime为null，无法显示时间");
                         }
+
+                        if (tvUploadStatus != null) {
+                            tvUploadStatus.setVisibility(View.VISIBLE);
+                            updateUploadStatus();
+                            tvUploadStatus.bringToFront();
+                        }
                         
                         // 确保ImageView在TextureView之上，时间文本在ImageView之上
                         ivCapturedImage.bringToFront();
@@ -1127,6 +1142,102 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     
+    private void setupUploadStatusObserver() {
+        try {
+            androidx.work.WorkManager.getInstance(getApplicationContext())
+                    .getWorkInfosByTagLiveData(com.pipiqiang.qcamera.app.CloudUploadWorker.TAG_UPLOAD_WORK)
+                    .observe(this, infos -> {
+                        updateUploadStatus(infos);
+                    });
+        } catch (Exception e) {
+            Log.w(TAG, "注册上传状态观察失败", e);
+        }
+    }
+
+    private void updateUploadStatus() {
+        try {
+            java.util.concurrent.Executor exec = java.util.concurrent.Executors.newSingleThreadExecutor();
+            androidx.work.WorkManager.getInstance(getApplicationContext())
+                    .getWorkInfosByTag(com.pipiqiang.qcamera.app.CloudUploadWorker.TAG_UPLOAD_WORK)
+                    .addListener(() -> {
+                        try {
+                            java.util.List<androidx.work.WorkInfo> infos = androidx.work.WorkManager.getInstance(getApplicationContext())
+                                    .getWorkInfosByTag(com.pipiqiang.qcamera.app.CloudUploadWorker.TAG_UPLOAD_WORK)
+                                    .get();
+                            updateUploadStatus(infos);
+                        } catch (Exception ignored) {}
+                    }, exec);
+        } catch (Exception e) {
+            Log.w(TAG, "查询上传状态失败", e);
+        }
+    }
+
+    private void updateUploadStatus(java.util.List<androidx.work.WorkInfo> infos) {
+        if (tvUploadStatus == null) return;
+        int pending = 0;
+        int running = 0;
+        int pct = 0;
+        long bps = 0;
+        long eta = -1;
+        String status = "idle";
+        if (infos != null) {
+            for (androidx.work.WorkInfo wi : infos) {
+                androidx.work.WorkInfo.State s = wi.getState();
+                if (s == androidx.work.WorkInfo.State.ENQUEUED) pending++;
+                else if (s == androidx.work.WorkInfo.State.RUNNING) {
+                    running++;
+                    androidx.work.Data d = wi.getProgress();
+                    pct = d.getInt("progress_pct", pct);
+                    bps = d.getLong("speed_bps", bps);
+                    eta = d.getLong("eta_ms", eta);
+                    status = d.getString("status");
+                }
+            }
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("待上传: ").append(pending + running);
+        if (running > 0) {
+            sb.append(" 进度: ").append(pct).append("%");
+            if (bps > 0) sb.append(" 速度: ").append(formatSpeed(bps));
+            if (eta >= 0) sb.append(" 剩余: ").append(formatEta(eta));
+        }
+        String text = sb.toString();
+        final String t = text;
+        final int fRunning = running;
+        final int fPending = pending;
+        final String fStatus = status;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                tvUploadStatus.setText(t);
+                if ("error".equalsIgnoreCase(fStatus)) {
+                    tvUploadStatus.setTextColor(android.graphics.Color.RED);
+                } else if (fRunning > 0) {
+                    tvUploadStatus.setTextColor(android.graphics.Color.CYAN);
+                } else if ((fPending + fRunning) > 0) {
+                    tvUploadStatus.setTextColor(android.graphics.Color.YELLOW);
+                } else {
+                    tvUploadStatus.setTextColor(android.graphics.Color.GREEN);
+                }
+                tvUploadStatus.setVisibility(android.view.View.VISIBLE);
+            }
+        });
+    }
+
+    private String formatSpeed(long bps) {
+        double kbps = bps / 1024.0;
+        double mbps = kbps / 1024.0;
+        if (mbps >= 1.0) return String.format(java.util.Locale.getDefault(), "%.2f MB/s", mbps);
+        return String.format(java.util.Locale.getDefault(), "%.1f KB/s", kbps);
+    }
+
+    private String formatEta(long etaMs) {
+        long sec = etaMs / 1000;
+        long m = sec / 60;
+        long s = sec % 60;
+        if (m > 0) return m + "m" + s + "s";
+        return s + "s";
+    }
     // 检查服务状态
     private void checkServiceStatus() {
         // 这里可以添加检查服务是否正在运行的逻辑
