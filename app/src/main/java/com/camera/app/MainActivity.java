@@ -143,6 +143,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        AppLogger.init(getApplicationContext());
+        AppLogger.d(TAG, "应用启动");
+        AppLogger.enqueueUpload(getApplicationContext());
         
         // 初始化计数器
         captureCounter = new CaptureCounter(getApplicationContext());
@@ -265,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private boolean checkPermissions() {
-        Log.d(TAG, "检查权限");
+        AppLogger.d(TAG, "检查权限");
         
         String[] permissions;
         if (Build.VERSION.SDK_INT >= 33) {
@@ -314,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
             if (!allGranted) {
                 Toast.makeText(this, "缺少必要权限，部分功能可能无法使用", Toast.LENGTH_LONG).show();
             } else {
-                Log.d(TAG, "所有权限已授予");
+                AppLogger.d(TAG, "所有权限已授予");
                 // 获取可用摄像头列表
                 initializeCameras();
             }
@@ -353,9 +356,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             
-            Log.d(TAG, "发现 " + cameraIds.length + " 个摄像头");
+            AppLogger.d(TAG, "发现 " + cameraIds.length + " 个摄像头");
         } catch (CameraAccessException e) {
-            Log.e(TAG, "获取摄像头列表失败", e);
+            AppLogger.e(TAG, "获取摄像头列表失败", e);
             cameraIds = new String[0];
             cameraNames = new String[0];
         }
@@ -387,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                     } catch (Exception e) {
-                        Log.e(TAG, "切换摄像头时发生错误", e);
+                        AppLogger.e(TAG, "切换摄像头时发生错误", e);
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -445,7 +448,7 @@ public class MainActivity extends AppCompatActivity {
                 flashModeForCapture = FlashMode.OFF;
                 break;
         }
-        Log.d(TAG, "切换闪光灯设置 - 当前模式: " + flashModeForCapture);
+        AppLogger.d(TAG, "切换闪光灯设置 - 当前模式: " + flashModeForCapture);
         String modeText = (flashModeForCapture == FlashMode.ON) ? "闪光灯: 开" : (flashModeForCapture == FlashMode.AUTO ? "闪光灯: 自动" : "闪光灯: 关");
         btnFlashToggle.setText(modeText);
 
@@ -481,7 +484,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void startCapture() {
-        Log.d(TAG, "开始拍照");
+        AppLogger.d(TAG, "开始拍照");
         
         // 更新运行状态
         isRunning = true;
@@ -593,7 +596,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 if (customCameraManager != null && customCameraManager.isCameraOpened()) {
                     // 相机已准备好，再等待一小段时间让预览稳定
-                    Log.d(TAG, "相机已就绪，等待预览稳定后拍照");
+            AppLogger.d(TAG, "相机已就绪，等待预览稳定后拍照");
                     captureHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
@@ -606,7 +609,7 @@ public class MainActivity extends AppCompatActivity {
                     if (retryCounter.count < maxRetries) {
                         captureHandler.postDelayed(this, retryDelay);
                     } else {
-                        Log.w(TAG, "等待相机准备超时，尝试执行拍照");
+                        AppLogger.w(TAG, "等待相机准备超时，尝试执行拍照");
                         executeCaptureAfterPreviewReady();
                     }
                 }
@@ -622,10 +625,10 @@ public class MainActivity extends AppCompatActivity {
             if (customCameraManager != null && customCameraManager.isCameraOpened()) {
                 // 更新闪光模式到拍照设置
                 customCameraManager.setFlashMode(flashModeForCapture);
-                Log.d(TAG, "相机已就绪，开始拍照");
+                AppLogger.d(TAG, "相机已就绪，开始拍照");
                 customCameraManager.takePicture();
             } else {
-                Log.w(TAG, "拍照管理器未就绪，跳过本次拍照");
+                AppLogger.w(TAG, "拍照管理器未就绪，跳过本次拍照");
                 // 如果相机未就绪，尝试重新打开
                 if (textureView != null && textureView.isAvailable()) {
                     showCameraPreview();
@@ -633,7 +636,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            Log.e(TAG, "执行拍照异常", e);
+            AppLogger.e(TAG, "执行拍照异常", e);
         }
     }
 
@@ -647,7 +650,7 @@ public class MainActivity extends AppCompatActivity {
                 customCameraManager = null;
             }
         } catch (Exception e) {
-            Log.e(TAG, "关闭相机资源失败", e);
+                AppLogger.e(TAG, "关闭相机资源失败", e);
         }
         // UI操作已移到调用处的runOnUiThread中，这里不再处理
     }
@@ -842,7 +845,7 @@ public class MainActivity extends AppCompatActivity {
                 backgroundThread = null;
                 backgroundHandler = null;
             } catch (InterruptedException e) {
-                Log.e(TAG, "中断后台线程", e);
+            AppLogger.e(TAG, "中断后台线程", e);
             }
         }
     }
@@ -894,7 +897,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 // 使用自定义相机管理器
                 if (customCameraManager == null) {
-                    Log.d(TAG, "创建新的CustomCameraManager实例");
+                    AppLogger.d(TAG, "创建新的CustomCameraManager实例");
                     customCameraManager = new CustomCameraManager(MainActivity.this);
                 } 
                 
@@ -910,7 +913,7 @@ public class MainActivity extends AppCompatActivity {
                 customCameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
                     @Override
                     public void onCaptureSuccess(String imagePath) {
-                        Log.d(TAG, "图片保存成功，准备关闭摄像头");
+                        AppLogger.d(TAG, "图片保存成功，准备关闭摄像头");
                         
                         // 按照用户要求的流程：拍照完成后立即关闭摄像头和闪光灯
                         // 在后台线程中关闭相机硬件资源，然后在主线程更新UI
@@ -920,7 +923,7 @@ public class MainActivity extends AppCompatActivity {
                                 public void run() {
                                     // 关闭摄像头资源（包括闪光灯）- 这是硬件操作，可以在后台线程进行
                                     closeCameraResourcesOnly();
-                                    Log.d(TAG, "拍照完成，已关闭摄像头和闪光灯");
+                                    AppLogger.d(TAG, "拍照完成，已关闭摄像头和闪光灯");
                                     
                                     // 在主线程中更新UI
                                     runOnUiThread(new Runnable() {
@@ -945,7 +948,7 @@ public class MainActivity extends AppCompatActivity {
                                 public void run() {
                                     closeCameraResourcesOnlyOnUI();
                                     isPreviewShowing = false;
-                                    Log.d(TAG, "拍照完成，已关闭摄像头和闪光灯");
+                                    AppLogger.d(TAG, "拍照完成，已关闭摄像头和闪光灯");
                                     
                                     // 显示拍摄的照片
                                     showLastCapturedImage(imagePath);
@@ -956,7 +959,7 @@ public class MainActivity extends AppCompatActivity {
                         // 递增计数器
                         if (captureCounter != null) {
                             captureCounter.incrementCount();
-                            Log.d(TAG, "计数器已递增，当前会话计数: " + captureCounter.getSessionCount());
+                            AppLogger.d(TAG, "计数器已递增，当前会话计数: " + captureCounter.getSessionCount());
                         }
                         
                         // 发送广播通知拍照完成（用于更新计数器显示）
@@ -970,7 +973,7 @@ public class MainActivity extends AppCompatActivity {
                     
                     @Override
                     public void onCaptureError(Exception e) {
-                        Log.e(TAG, "拍照失败", e);
+                        AppLogger.e(TAG, "拍照失败", e);
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -1056,9 +1059,9 @@ public class MainActivity extends AppCompatActivity {
                         tvCaptureTime.setVisibility(View.VISIBLE);
                         tvCaptureTime.bringToFront(); // 确保时间文本在最上层
                         tvCaptureTime.setText("拍摄时间: " + android.text.format.DateFormat.format("yyyy-MM-dd HH:mm:ss", System.currentTimeMillis()));
-                        Log.d(TAG, "显示拍摄时间: " + tvCaptureTime.getText());
+                        AppLogger.d(TAG, "显示拍摄时间: " + tvCaptureTime.getText());
                     } else {
-                        Log.w(TAG, "tvCaptureTime为null，无法显示时间");
+                        AppLogger.w(TAG, "tvCaptureTime为null，无法显示时间");
                     }
 
                     if (tvUploadStatus != null) {
@@ -1073,7 +1076,7 @@ public class MainActivity extends AppCompatActivity {
                         tvCaptureTime.bringToFront();
                     }
                     
-                    Log.d(TAG, "显示拍摄的照片，摄像头已关闭，等待下一次拍照周期");
+                    AppLogger.d(TAG, "显示拍摄的照片，摄像头已关闭，等待下一次拍照周期");
                     
                     // 不再延迟重新显示预览，相机保持关闭状态
                     // 只有在下一个拍照周期开始时（通过scheduleNextCycle触发）才会重新打开摄像头
@@ -1084,7 +1087,7 @@ public class MainActivity extends AppCompatActivity {
     
     // 显示上次拍摄的照片
     private void showLastCapturedImage(String photoPath) {
-        Log.d(TAG, "显示上次拍摄的照片: " + photoPath);
+        AppLogger.d(TAG, "显示上次拍摄的照片: " + photoPath);
         // 显示最后拍摄的照片
         if (photoPath != null && !photoPath.isEmpty()) {
             runOnUiThread(new Runnable() {
@@ -1103,9 +1106,9 @@ public class MainActivity extends AppCompatActivity {
                         Bitmap bitmap = BitmapFactory.decodeFile(photoPath);
                         if (bitmap != null) {
                             ivCapturedImage.setImageBitmap(bitmap);
-                            Log.d(TAG, "成功加载并显示照片");
+                            AppLogger.d(TAG, "成功加载并显示照片");
                         } else {
-                            Log.e(TAG, "无法加载照片: " + photoPath);
+                            AppLogger.e(TAG, "无法加载照片: " + photoPath);
                         }
 
                         // 显示拍摄时间（从文件时间或当前时间）- 确保时间显示在最上层
@@ -1118,9 +1121,9 @@ public class MainActivity extends AppCompatActivity {
                             tvCaptureTime.setVisibility(View.VISIBLE);
                             tvCaptureTime.bringToFront(); // 确保时间文本在最上层
                             tvCaptureTime.setText("拍摄时间: " + android.text.format.DateFormat.format("yyyy-MM-dd HH:mm:ss", ts));
-                            Log.d(TAG, "显示拍摄时间: " + tvCaptureTime.getText());
+                            AppLogger.d(TAG, "显示拍摄时间: " + tvCaptureTime.getText());
                         } else {
-                            Log.w(TAG, "tvCaptureTime为null，无法显示时间");
+                            AppLogger.w(TAG, "tvCaptureTime为null，无法显示时间");
                         }
 
                         if (tvUploadStatus != null) {
@@ -1138,7 +1141,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         } else {
-            Log.w(TAG, "照片路径为空，无法显示");
+            AppLogger.w(TAG, "照片路径为空，无法显示");
         }
     }
     
@@ -1150,7 +1153,7 @@ public class MainActivity extends AppCompatActivity {
                         updateUploadStatus(infos);
                     });
         } catch (Exception e) {
-            Log.w(TAG, "注册上传状态观察失败", e);
+            AppLogger.w(TAG, "注册上传状态观察失败", e);
         }
     }
 
@@ -1168,7 +1171,7 @@ public class MainActivity extends AppCompatActivity {
                         } catch (Exception ignored) {}
                     }, exec);
         } catch (Exception e) {
-            Log.w(TAG, "查询上传状态失败", e);
+            AppLogger.w(TAG, "查询上传状态失败", e);
         }
     }
 

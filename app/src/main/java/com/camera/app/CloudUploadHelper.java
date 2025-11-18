@@ -109,4 +109,18 @@ public class CloudUploadHelper {
         prefix = prefix.replaceAll("^/+", "").replaceAll("/+$", "");
         return prefix + "/" + datePath + "/" + filename;
     }
+    public static String buildUploadKeyWithPrefix(SettingsManager settingsManager, File file, String customPrefix) {
+        String filename = file.getName();
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd");
+        String datePath = sdf.format(new java.util.Date(file.lastModified()));
+        String prefix = customPrefix;
+        if (prefix == null || prefix.trim().isEmpty()) {
+            prefix = settingsManager.getCloudPathPrefix();
+            if (prefix == null || prefix.trim().isEmpty()) {
+                prefix = "photos";
+            }
+        }
+        prefix = prefix.replaceAll("^/+", "").replaceAll("/+$", "");
+        return prefix + "/" + datePath + "/" + filename;
+    }
 }

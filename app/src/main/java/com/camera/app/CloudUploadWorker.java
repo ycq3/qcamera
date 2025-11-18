@@ -58,8 +58,13 @@ public class CloudUploadWorker extends Worker {
                     settingsManager.isCloudResumableEnabled()
             );
 
-            // 复用 CloudUploadHelper 计算 key
-            String key = CloudUploadHelper.buildUploadKey(settingsManager, file);
+            String customPrefix = getInputData().getString("key_prefix");
+            String key;
+            if (customPrefix != null && !customPrefix.trim().isEmpty()) {
+                key = CloudUploadHelper.buildUploadKeyWithPrefix(settingsManager, file, customPrefix);
+            } else {
+                key = CloudUploadHelper.buildUploadKey(settingsManager, file);
+            }
             long start = System.currentTimeMillis();
             com.pipiqiang.qcamera.app.UploadProgressBus.register(key, (k, bytes, total) -> {
                 long now = System.currentTimeMillis();
