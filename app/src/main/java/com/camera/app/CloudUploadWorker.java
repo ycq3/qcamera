@@ -60,8 +60,36 @@ public class CloudUploadWorker extends Worker {
 
             // 复用 CloudUploadHelper 计算 key
             String key = CloudUploadHelper.buildUploadKey(settingsManager, file);
+            long start = System.currentTimeMillis();
+            com.pipiqiang.qcamera.app.UploadProgressBus.register(key, (k, bytes, total) -> {
+                long now = System.currentTimeMillis();
+                long dt = Math.max(1, now - start);
+                long bps = (bytes * 1000L) / dt;
+                long remain = Math.max(0, total - bytes);
+                long eta = bps > 0 ? (remain * 1000L) / bps : -1;
+                int pct = total > 0 ? (int) ((bytes * 100) / total) : 0;
+                androidx.work.Data progress = new androidx.work.Data.Builder()
+                        .putInt("progress_pct", pct)
+                        .putLong("bytes", bytes)
+                        .putLong("total", total)
+                        .putLong("speed_bps", bps)
+                        .putLong("eta_ms", eta)
+                        .putString("status", "uploading")
+                        .build();
+                setProgressAsync(progress);
+            });
+
             CloudStorage storage = CloudStorageFactory.create(getApplicationContext(), cfg);
             storage.upload(key, file);
+            com.pipiqiang.qcamera.app.UploadProgressBus.unregister(key);
+            setProgressAsync(new androidx.work.Data.Builder()
+                    .putInt("progress_pct", 100)
+                    .putLong("bytes", file.length())
+                    .putLong("total", file.length())
+                    .putLong("speed_bps", 0)
+                    .putLong("eta_ms", 0)
+                    .putString("status", "done")
+                    .build());
 
             if (settingsManager.isCloudDeleteOnSuccessEnabled()) {
                 boolean deleted = CloudUploadHelper.deleteFileAfterUpload(getApplicationContext(), file);
@@ -71,6 +99,10 @@ public class CloudUploadWorker extends Worker {
             return Result.success();
         } catch (Exception e) {
             Log.e(TAG, "自动上传失败", e);
+            setProgressAsync(new androidx.work.Data.Builder()
+                    .putString("status", "error")
+                    .putString("error", e.getMessage() == null ? "network" : e.getMessage())
+                    .build());
             return Result.retry();
         }
     }
