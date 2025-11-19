@@ -3,7 +3,7 @@ package com.pipiqiang.qcamera.app;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 public class BootReceiver extends BroadcastReceiver {
     
@@ -12,7 +12,7 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Log.d(TAG, "设备启动完成");
+            AppLogger.d(TAG, "设备启动完成");
             
             // 在实际应用中，可以根据保存的状态决定是否需要重启拍照服务
             // 这里我们只记录日志，不自动启动服务

@@ -72,7 +72,7 @@ public class PhotoViewerActivity extends AppCompatActivity {
                             CloudUploadHelper.upload(PhotoViewerActivity.this, sm, path);
                             return true;
                         } catch (Exception e) {
-                            android.util.Log.e("PhotoViewer", "上传失败", e);
+                            com.pipiqiang.qcamera.app.AppLogger.e("PhotoViewer", "上传失败", e);
                             return false;
                         }
                     }

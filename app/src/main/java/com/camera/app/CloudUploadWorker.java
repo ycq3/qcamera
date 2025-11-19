@@ -1,7 +1,7 @@
 package com.pipiqiang.qcamera.app;
 
 import android.content.Context;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 import androidx.annotation.NonNull;
 import androidx.work.Constraints;
@@ -30,14 +30,14 @@ public class CloudUploadWorker extends Worker {
     public Result doWork() {
         String photoPath = getInputData().getString(KEY_PHOTO_PATH);
         if (photoPath == null || photoPath.trim().isEmpty()) {
-            Log.e(TAG, "缺少照片路径");
+            AppLogger.e(TAG, "缺少照片路径");
             return Result.failure();
         }
         try {
             SettingsManager settingsManager = new SettingsManager(getApplicationContext());
             File file = new File(photoPath);
             if (!file.exists()) {
-                Log.w(TAG, "文件不存在，视为成功: " + photoPath);
+                AppLogger.w(TAG, "文件不存在，视为成功: " + photoPath);
                 return Result.success();
             }
 
@@ -98,12 +98,12 @@ public class CloudUploadWorker extends Worker {
 
             if (settingsManager.isCloudDeleteOnSuccessEnabled()) {
                 boolean deleted = CloudUploadHelper.deleteFileAfterUpload(getApplicationContext(), file);
-                Log.d(TAG, "上传成功，删除本地文件: " + deleted);
+                AppLogger.d(TAG, "上传成功，删除本地文件: " + deleted);
             }
 
             return Result.success();
         } catch (Exception e) {
-            Log.e(TAG, "自动上传失败", e);
+            AppLogger.e(TAG, "自动上传失败", e);
             setProgressAsync(new androidx.work.Data.Builder()
                     .putString("status", "error")
                     .putString("error", e.getMessage() == null ? "network" : e.getMessage())

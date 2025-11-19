@@ -5,7 +5,7 @@ import android.content.ContentUris;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 import com.pipiqiang.qcamera.storage.CloudStorage;
 import com.pipiqiang.qcamera.storage.CloudStorageFactory;
@@ -47,7 +47,7 @@ public class CloudUploadHelper {
 
         if (settingsManager.isCloudDeleteOnSuccessEnabled()) {
             boolean deleted = deleteFileAfterUpload(context, file);
-            Log.d(TAG, "上传成功，删除本地文件: " + deleted);
+            AppLogger.d(TAG, "上传成功，删除本地文件: " + deleted);
         }
     }
 
@@ -69,7 +69,7 @@ public class CloudUploadHelper {
                 if (rows > 0) return true;
             }
         } catch (Exception e) {
-            Log.e(TAG, "删除文件失败", e);
+            AppLogger.e(TAG, "删除文件失败", e);
         }
         return false;
     }

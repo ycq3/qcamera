@@ -2,7 +2,7 @@ package com.pipiqiang.qcamera.storage;
 
 import android.content.Context;
 import android.util.Base64;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -30,9 +30,12 @@ public class WebDavStorage implements CloudStorage {
         this.username = config.accessKey; // reuse accessKey as username
         this.password = config.secretKey; // reuse secretKey as password
 
-        client = new OkHttpClient.Builder()
-                .retryOnConnectionFailure(true)
-                .build();
+        okhttp3.OkHttpClient.Builder b = new OkHttpClient.Builder()
+                .retryOnConnectionFailure(true);
+        try {
+            b.addInterceptor(new io.sentry.okhttp.SentryOkHttpInterceptor());
+        } catch (Throwable ignored) {}
+        client = b.build();
     }
 
     @Override
@@ -53,7 +56,7 @@ public class WebDavStorage implements CloudStorage {
                 .header("Authorization", Credentials.basic(username == null ? "" : username, password == null ? "" : password))
                 .build();
         try (Response resp = client.newCall(request).execute()) {
-            Log.d("WebDavStorage", "key: " + key + " upload: " + url+" Response:"+resp.body().string());
+            AppLogger.d("WebDavStorage", "key: " + key + " upload: " + url+" Response:"+resp.body().string());
             if (!resp.isSuccessful()) {
                 throw new RuntimeException("WebDAV upload failed: " + resp.code() + " " + resp.message());
             }

@@ -14,7 +14,7 @@ import android.app.KeyguardManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 import androidx.core.app.NotificationCompat;
 
@@ -71,10 +71,10 @@ public class CameraService extends Service {
                 } catch (Exception e) {
                     flashMode = FlashMode.OFF;
                 }
-                Log.d(TAG, "接收启动拍照命令 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
+                AppLogger.d(TAG, "接收启动拍照命令 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                 startCapture();
             } else if (ACTION_STOP_CAPTURE.equals(action)) {
-                Log.d(TAG, "接收停止拍照命令");
+                AppLogger.d(TAG, "接收停止拍照命令");
                 stopCapture();
             }
         }
@@ -89,17 +89,20 @@ public class CameraService extends Service {
     
     private void startCapture() {
         if (isCapturing) {
-            Log.d(TAG, "拍照已在进行中");
+            AppLogger.d(TAG, "拍照已在进行中");
             return;
         }
         
         isCapturing = true;
-        Log.d(TAG, "开始拍照服务");
+        AppLogger.d(TAG, "开始拍照服务");
         
-        // 获取电源锁
-        if (!wakeLock.isHeld()) {
-            wakeLock.acquire(60*60*1000L /*60分钟*/);
-        }
+        // 获取电源锁（无限期，停止时释放）
+        try {
+            wakeLock.setReferenceCounted(false);
+            if (!wakeLock.isHeld()) {
+                wakeLock.acquire();
+            }
+        } catch (Exception ignored) {}
         
         // 发送广播通知MainActivity服务已启动
         Intent statusIntent = new Intent("com.pipiqiang.qcamera.SERVICE_STATUS");
@@ -114,12 +117,12 @@ public class CameraService extends Service {
     }
     
     private void stopCapture() {
-        Log.d(TAG, "停止拍照服务");
+        AppLogger.d(TAG, "停止拍照服务");
         isCapturing = false;
         
         // 释放电源锁
         if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
+            try { wakeLock.release(); } catch (Exception ignored) {}
         }
         
         // 发送广播通知MainActivity服务已停止
@@ -149,14 +152,14 @@ public class CameraService extends Service {
     private void createCaptureTask() {
         // 获取设置的拍摄间隔时间（秒）
         int intervalSeconds = getCaptureInterval();
-        Log.d(TAG, "设置拍照间隔: " + intervalSeconds + " 秒");
-        Log.d(TAG, "创建拍照任务时的参数 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
+        AppLogger.d(TAG, "设置拍照间隔: " + intervalSeconds + " 秒");
+        AppLogger.d(TAG, "创建拍照任务时的参数 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
         
         captureRunnable = new Runnable() {
             @Override
             public void run() {
                 if (isCapturing) {
-                    Log.d(TAG, "执行拍照任务 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
+                    AppLogger.d(TAG, "执行拍照任务 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                     // 执行拍照
                     executeCapture();
                     
@@ -179,7 +182,7 @@ public class CameraService extends Service {
             public void run() {
                 CustomCameraManager cameraManager = null;
                 try {
-                    Log.d(TAG, "开始执行拍照任务 - 当前摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
+                    AppLogger.d(TAG, "开始执行拍照任务 - 当前摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                     ensureDeviceReadyForCamera();
                     
                     // 初始化管理器
@@ -192,7 +195,7 @@ public class CameraService extends Service {
                     cameraManager.setSelectedCameraIndex(cameraIndex);
                     // 设置闪光灯三态
                     cameraManager.setFlashMode(flashMode);
-                    Log.d(TAG, "设置相机管理器参数 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
+                    AppLogger.d(TAG, "设置相机管理器参数 - 摄像头索引: " + cameraIndex + ", 闪光模式: " + flashMode);
                     
                     // 设置TextureView（虽然在服务中不直接使用，但保持接口一致性）
                     cameraManager.setTextureView(null);
@@ -202,7 +205,7 @@ public class CameraService extends Service {
                         @Override
                         public void onPreviewDisplay(Bitmap bitmap) {
                             // 在服务中不需要显示预览，但可以发送广播通知
-                            Log.d(TAG, "拍照完成，图片已生成");
+                            AppLogger.d(TAG, "拍照完成，图片已生成");
                         }
                     });
                     
@@ -233,9 +236,9 @@ public class CameraService extends Service {
                     showLastImageIntent.putExtra("photoPath", photoPath);
                     sendBroadcast(showLastImageIntent);
                     
-                    Log.d(TAG, "拍照任务完成");
+                    AppLogger.d(TAG, "拍照任务完成");
                 } catch (Exception e) {
-                    Log.e(TAG, "执行拍照任务时出错", e);
+                    AppLogger.e(TAG, "执行拍照任务时出错", e);
                 } finally {
                     // 确保在出现异常时也停止后台线程
                     try {
@@ -245,7 +248,7 @@ public class CameraService extends Service {
                             cameraManager.stopBackgroundThread();
                         }
                     } catch (Exception ex) {
-                        Log.e(TAG, "停止后台线程时出错", ex);
+                        AppLogger.e(TAG, "停止后台线程时出错", ex);
                     }
                 }
             }
@@ -255,7 +258,7 @@ public class CameraService extends Service {
     
     private String takePicture(CustomCameraManager cameraManager) throws Exception {
         // 实现拍照逻辑
-        Log.d(TAG, "正在拍照...");
+        AppLogger.d(TAG, "正在拍照...");
         
         final String[] photoPath = {null};
         final Exception[] captureError = {null};
@@ -265,7 +268,7 @@ public class CameraService extends Service {
         cameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
             @Override
             public void onCaptureSuccess(String imagePath) {
-                Log.d(TAG, "拍照成功，图片路径: " + imagePath);
+                AppLogger.d(TAG, "拍照成功，图片路径: " + imagePath);
                 photoPath[0] = imagePath;
                 captureCompleted[0] = true;
                 synchronized (lock) {
@@ -275,7 +278,7 @@ public class CameraService extends Service {
             
             @Override
             public void onCaptureError(Exception e) {
-                Log.e(TAG, "拍照失败", e);
+                AppLogger.e(TAG, "拍照失败", e);
                 captureError[0] = e;
                 captureCompleted[0] = true;
                 synchronized (lock) {
@@ -285,7 +288,7 @@ public class CameraService extends Service {
         });
         
         // 打开相机
-        Log.d(TAG, "打开相机");
+        AppLogger.d(TAG, "打开相机");
         cameraManager.openCamera();
         
         // 等待一段时间确保相机打开
@@ -297,16 +300,16 @@ public class CameraService extends Service {
         
         // 检查相机是否成功打开
         if (!cameraManager.isCameraOpened()) {
-            Log.e(TAG, "相机打开失败");
+            AppLogger.e(TAG, "相机打开失败");
             throw new Exception("相机打开失败");
         }
         
         // 拍照
-        Log.d(TAG, "执行拍照");
+        AppLogger.d(TAG, "执行拍照");
         cameraManager.takePicture();
         
         // 等待拍照完成，增加超时处理
-        Log.d(TAG, "等待拍照完成");
+        AppLogger.d(TAG, "等待拍照完成");
         synchronized (lock) {
             long startTime = System.currentTimeMillis();
             long timeout = 15000; // 15秒超时
@@ -322,19 +325,19 @@ public class CameraService extends Service {
             
             // 检查是否超时
             if (!captureCompleted[0]) {
-                Log.e(TAG, "拍照超时");
+                AppLogger.e(TAG, "拍照超时");
                 throw new Exception("拍照超时");
             }
         }
         
         // 注意：这里不再关闭相机，以便保持预览
-        Log.d(TAG, "拍照完成，相机保持开启状态以维持预览");
+        AppLogger.d(TAG, "拍照完成，相机保持开启状态以维持预览");
         
         if (captureError[0] != null) {
             throw captureError[0];
         }
         
-        Log.d(TAG, "返回照片路径: " + photoPath[0]);
+        AppLogger.d(TAG, "返回照片路径: " + photoPath[0]);
         return photoPath[0];
     }
 
@@ -344,7 +347,7 @@ public class CameraService extends Service {
             KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
             boolean interactive = pm != null && pm.isInteractive();
             boolean keyguardLocked = km != null && km.isKeyguardLocked();
-            Log.d(TAG, "设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
+            AppLogger.d(TAG, "设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
 
             if (!interactive || keyguardLocked) {
                 PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "CameraApp::PreCaptureWake");
@@ -356,22 +359,22 @@ public class CameraService extends Service {
                 // 重新评估状态，仅用于日志
                 interactive = pm.isInteractive();
                 keyguardLocked = km.isKeyguardLocked();
-                Log.d(TAG, "唤醒后设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
+                AppLogger.d(TAG, "唤醒后设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
             }
         } catch (Exception e) {
-            Log.w(TAG, "确保设备就绪时发生异常", e);
+            AppLogger.w(TAG, "确保设备就绪时发生异常", e);
         }
     }
     
     private void processPicture(String photoPath, SettingsManager settingsManager,
                                StorageManager storageManager, EmailManager emailManager) {
         if (photoPath == null || photoPath.isEmpty()) {
-            Log.e(TAG, "照片路径为空");
+            AppLogger.e(TAG, "照片路径为空");
             return;
         }
         
         // 根据设置决定是保存照片还是发送邮件
-        Log.d(TAG, "处理照片: " + photoPath);
+        AppLogger.d(TAG, "处理照片: " + photoPath);
         
         if (settingsManager.isEmailSendingEnabled()) {
             // 发送邮件
@@ -379,16 +382,16 @@ public class CameraService extends Service {
             if (emailManager.isValidEmail(emailAddress)) {
                 boolean success = emailManager.sendPhotoByEmail(photoPath, emailAddress);
                 if (success) {
-                    Log.d(TAG, "照片已发送到邮箱");
+                    AppLogger.d(TAG, "照片已发送到邮箱");
                 } else {
-                    Log.e(TAG, "发送邮件失败");
+                    AppLogger.e(TAG, "发送邮件失败");
                 }
             } else {
-                Log.e(TAG, "邮箱地址无效");
+                AppLogger.e(TAG, "邮箱地址无效");
             }
         } else {
             // 照片已保存到默认位置，无需额外操作
-            Log.d(TAG, "照片已保存到: " + photoPath);
+            AppLogger.d(TAG, "照片已保存到: " + photoPath);
         }
 
         // 云存储自动上传：改为使用 WorkManager，保证后台与网络约束下可靠执行
@@ -402,9 +405,9 @@ public class CameraService extends Service {
                         .addTag(com.pipiqiang.qcamera.app.CloudUploadWorker.TAG_UPLOAD_WORK)
                         .build();
                 androidx.work.WorkManager.getInstance(getApplicationContext()).enqueue(req);
-                Log.d(TAG, "已提交自动上传任务: " + photoPath);
+                AppLogger.d(TAG, "已提交自动上传任务: " + photoPath);
             } catch (Exception e) {
-                Log.e(TAG, "提交自动上传任务失败", e);
+                AppLogger.e(TAG, "提交自动上传任务失败", e);
             }
         }
     }
@@ -415,7 +418,7 @@ public class CameraService extends Service {
     
     private void checkAndCleanStorage(SettingsManager settingsManager, StorageManager storageManager) {
         // 检查存储空间并在必要时清理旧照片
-        Log.d(TAG, "检查存储空间...");
+        AppLogger.d(TAG, "检查存储空间...");
         
         boolean autoClean = settingsManager.isAutoCleanEnabled();
         int minSpaceMB = settingsManager.getMinSpaceMB();
@@ -464,6 +467,6 @@ public class CameraService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopCapture();
-        Log.d(TAG, "拍照服务已销毁");
+        AppLogger.d(TAG, "拍照服务已销毁");
     }
 }

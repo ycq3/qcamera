@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+
+    id 'io.sentry.android.gradle' version '5.12.2'
 }
 
 android {
@@ -87,9 +89,22 @@ dependencies {
     // WebDAV上传使用OkHttp
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
 
+    // Sentry Android SDK
+    implementation 'io.sentry:sentry-android:8.26.0'
+    implementation 'io.sentry:sentry-okhttp:8.26.0'
+
     // 测试依赖
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:4.11.0'
     testImplementation 'org.robolectric:robolectric:4.10.3'
     testImplementation 'androidx.test:core:1.5.0'
+}
+
+sentry {
+    org = "pipiqiang"
+    projectName = "qcamera"
+
+    // this will upload your source code to Sentry to show it as part of the stack traces
+    // disable if you don't want to expose your sources
+    includeSourceContext = true
 }

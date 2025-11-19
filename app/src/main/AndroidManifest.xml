@@ -39,6 +39,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CameraApp"
         android:usesCleartextTraffic="true"
+        android:name="com.pipiqiang.qcamera.app.CameraApp"
         tools:targetApi="31">
         <meta-data
             android:name="author"
@@ -98,6 +99,18 @@
             </intent-filter>
         </receiver>
             
-    </application>
+    
+    <!-- Required: set your sentry.io project identifier (DSN) -->
+    <meta-data android:name="io.sentry.dsn" android:value="https://c5e5b38a114b4c92ae700aeb524debde@o4505542569623552.ingest.us.sentry.io/4510385026826240" />
+    <!-- enable automatic breadcrumbs for user interactions (clicks, swipes, scrolls) -->
+    <meta-data android:name="io.sentry.traces.user-interaction.enable" android:value="true" />
+    <!-- enable screenshot for crashes (could contain sensitive/PII data) -->
+    <meta-data android:name="io.sentry.attach-screenshot" android:value="true" />
+    <!-- enable view hierarchy for crashes -->
+    <meta-data android:name="io.sentry.attach-view-hierarchy" android:value="true" />
+    <!-- enable the performance API by setting a sample-rate, adjust in production env -->
+    <meta-data android:name="io.sentry.traces.sample-rate" android:value="1.0" />
+    <meta-data android:name="io.sentry.logs.enabled" android:value="true" />
+</application>
 
 </manifest>

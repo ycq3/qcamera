@@ -2,7 +2,7 @@ package com.pipiqiang.qcamera.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 /**
  * 拍照计数器管理类
@@ -29,7 +29,7 @@ public class CaptureCounter {
     private void loadCounts() {
         sessionCount = sharedPreferences.getInt(KEY_SESSION_COUNT, 0);
         totalCount = sharedPreferences.getInt(KEY_TOTAL_COUNT, 0);
-        Log.d(TAG, "加载计数器 - 会话计数: " + sessionCount + ", 总计数: " + totalCount);
+        AppLogger.d(TAG, "加载计数器 - 会话计数: " + sessionCount + ", 总计数: " + totalCount);
     }
 
     /**
@@ -46,7 +46,7 @@ public class CaptureCounter {
         sessionCount++;
         totalCount++;
         saveCounts();
-        Log.d(TAG, "计数器递增 - 会话计数: " + sessionCount + ", 总计数: " + totalCount);
+        AppLogger.d(TAG, "计数器递增 - 会话计数: " + sessionCount + ", 总计数: " + totalCount);
     }
     
     /**
@@ -65,7 +65,7 @@ public class CaptureCounter {
     public void resetSessionCount() {
         sessionCount = 0;
         saveCounts();
-        Log.d(TAG, "重置会话计数 - 总计数: " + totalCount);
+        AppLogger.d(TAG, "重置会话计数 - 总计数: " + totalCount);
     }
     
     /**
@@ -94,6 +94,6 @@ public class CaptureCounter {
         editor.putInt(KEY_SESSION_COUNT, 0);
         editor.putInt(KEY_TOTAL_COUNT, 0);
         editor.apply();
-        Log.d(TAG, "清除所有计数");
+        AppLogger.d(TAG, "清除所有计数");
     }
 }

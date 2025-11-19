@@ -218,3 +218,6 @@ lint/
 # Android Profiling
 *.hprof
 sentry-wizard
+
+# Sentry Config File
+sentry.properties

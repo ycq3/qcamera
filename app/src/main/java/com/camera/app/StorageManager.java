@@ -3,7 +3,7 @@ package com.pipiqiang.qcamera.app;
 import android.content.Context;
 import android.os.Environment;
 import android.os.StatFs;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -93,7 +93,7 @@ public class StorageManager {
                 long fileSize = photoFile.length();
                 if (photoFile.delete()) {
                     freedSpace += fileSize;
-                    Log.d(TAG, "删除旧照片: " + photoFile.getName() + ", 大小: " + fileSize + " 字节");
+                    AppLogger.d(TAG, "删除旧照片: " + photoFile.getName() + ", 大小: " + fileSize + " 字节");
                     
                     if (freedSpace >= needToFree) {
                         break;
@@ -101,10 +101,10 @@ public class StorageManager {
                 }
             }
             
-            Log.d(TAG, "清理完成，释放空间: " + freedSpace + " 字节");
+            AppLogger.d(TAG, "清理完成，释放空间: " + freedSpace + " 字节");
             return true;
         } catch (Exception e) {
-            Log.e(TAG, "清理旧照片时出错", e);
+            AppLogger.e(TAG, "清理旧照片时出错", e);
             return false;
         }
     }
@@ -133,10 +133,10 @@ public class StorageManager {
         }
         
         long freeSpace = getFreeSpace();
-        Log.d(TAG, "当前剩余空间: " + freeSpace + " 字节 (" + (freeSpace / (1024*1024)) + " MB)");
+        AppLogger.d(TAG, "当前剩余空间: " + freeSpace + " 字节 (" + (freeSpace / (1024*1024)) + " MB)");
         
         if (freeSpace < minSpaceBytes) {
-            Log.d(TAG, "空间不足，开始清理旧照片");
+            AppLogger.d(TAG, "空间不足，开始清理旧照片");
             cleanOldPhotos(minSpaceBytes);
         }
     }

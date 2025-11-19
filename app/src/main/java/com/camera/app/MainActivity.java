@@ -32,7 +32,9 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.MotionEvent;
 import android.view.WindowManager;
+import android.app.KeyguardManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -76,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
     private TextureView textureView;
     private ImageView ivCapturedImage; // 用于显示拍摄照片的ImageView
     private ImageButton btnFlashIndicator; // 闪光灯指示器（图标）
+    private Button btnScreenOff; // 息屏按钮
+    private View blackOverlay; // 息屏覆盖层
     private Handler backgroundHandler;
     private HandlerThread backgroundThread;
     private String cameraId;
@@ -83,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isFlashOn = false; // 仅用于预览时的闪光灯指示
     private FlashMode flashModeForCapture = FlashMode.OFF; // 闪光灯三态：关/开/自动
     private boolean isPreviewShowing = false;
+    private boolean isScreenOffMode = false;
     
     // 自定义相机管理器
     private CustomCameraManager customCameraManager;
@@ -134,7 +139,8 @@ public class MainActivity extends AppCompatActivity {
                 // 计数器重置
                 updateCaptureCountDisplay();
             } else if ("com.pipiqiang.qcamera.action.SHOW_LAST_IMAGE".equals(action)) {
-                // 这个广播已经不再使用，照片显示在onCaptureSuccess中处理
+                String path = intent.getStringExtra("photoPath");
+                showLastCapturedImage(path);
             }
         }
     };
@@ -143,9 +149,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        AppLogger.init(getApplicationContext());
         AppLogger.d(TAG, "应用启动");
-        AppLogger.enqueueUpload(getApplicationContext());
         
         // 初始化计数器
         captureCounter = new CaptureCounter(getApplicationContext());
@@ -187,6 +191,15 @@ public class MainActivity extends AppCompatActivity {
         // 初始化计数器显示
         updateCaptureCountDisplay();
     }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (isScreenOffMode && ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
+            exitScreenOffMode();
+            return true;
+        }
+        return super.dispatchTouchEvent(ev);
+    }
     
     // 设置窗口标志以支持锁屏状态下运行
     private void setupWindowFlags() {
@@ -213,8 +226,10 @@ public class MainActivity extends AppCompatActivity {
         textureView = findViewById(R.id.texture_view);
         ivCapturedImage = findViewById(R.id.iv_captured_image); // 初始化ImageView
         btnFlashIndicator = findViewById(R.id.btn_flash_indicator);
+        btnScreenOff = findViewById(R.id.btn_screen_off);
         tvCaptureTime = findViewById(R.id.tv_capture_time); // 初始化拍摄时间显示
         tvUploadStatus = findViewById(R.id.tv_upload_status); // 初始化上传状态显示
+        blackOverlay = findViewById(R.id.black_overlay);
     }
     
     private void setupListeners() {
@@ -262,6 +277,22 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+        btnScreenOff.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                enterScreenOffMode();
+            }
+        });
+
+        if (blackOverlay != null) {
+            blackOverlay.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    exitScreenOffMode();
+                }
+            });
+        }
         
         // 纹理视图表面纹理监听器
         textureView.setSurfaceTextureListener(surfaceTextureListener);
@@ -489,32 +520,49 @@ public class MainActivity extends AppCompatActivity {
         // 更新运行状态
         isRunning = true;
         
-        // 获取拍照间隔设置
+        // 获取拍照间隔设置（仅用于进度条显示）
         SettingsManager settingsManager = new SettingsManager(this);
         interval = settingsManager.getCaptureInterval() * 1000L; // 转换为毫秒
         
-        // 获取电源锁
-        if (!wakeLock.isHeld()) {
-            wakeLock.acquire(60*60*1000L /*60分钟*/);
-        }
+        // 获取电源锁（无限期，停止时释放）
+        try {
+            wakeLock.setReferenceCounted(false);
+            if (!wakeLock.isHeld()) {
+                wakeLock.acquire();
+            }
+        } catch (Exception ignored) {}
 
         // 更新UI状态与进度条
         updateUI(true);
-        
-        // 启动进度条更新
         startProgressUpdate();
 
-        // 启动Activity驱动的拍照循环
-        startCaptureLoop();
+        // 使用前台服务进行拍照，避免休眠中断
+        try {
+            Intent intent = new Intent(MainActivity.this, CameraService.class);
+            intent.setAction(CameraService.ACTION_START_CAPTURE);
+            ContextCompat.startForegroundService(MainActivity.this, intent);
+        } catch (Exception e) {
+            AppLogger.e(TAG, "启动拍照服务失败", e);
+            Toast.makeText(this, "启动拍照服务失败", Toast.LENGTH_SHORT).show();
+        }
     }
     
     private void stopCapture() {
+        // 停止前台拍照服务
+        try {
+            Intent intent = new Intent(MainActivity.this, CameraService.class);
+            intent.setAction(CameraService.ACTION_STOP_CAPTURE);
+            startService(intent);
+        } catch (Exception e) {
+            AppLogger.e(TAG, "停止拍照服务失败", e);
+        }
+
         // 释放电源锁
         if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
+            try { wakeLock.release(); } catch (Exception ignored) {}
         }
         
-        // 停止Activity驱动的拍照循环
+        // 停止Activity驱动的拍照循环（不再使用，但确保清理）
         stopCaptureLoop();
 
         // 关闭相机资源，但保留已显示的图片
@@ -558,6 +606,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 单次拍照周期：短暂预览->拍照
     private void triggerOneCaptureCycle() {
+        ensureDeviceReadyForCamera();
         // 显示短暂预览（仅在没有预览显示时才显示）
         if (!isPreviewShowing) {
             showCameraPreview();
@@ -577,6 +626,33 @@ public class MainActivity extends AppCompatActivity {
                 // 如果相机未就绪，等待相机打开
                 waitForCameraReadyAndCapture();
             }
+        }
+    }
+
+    private void ensureDeviceReadyForCamera() {
+        try {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            boolean interactive = pm != null && pm.isInteractive();
+            boolean keyguardLocked = km != null && km.isKeyguardLocked();
+            AppLogger.d(TAG, "设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
+
+            if (!interactive || keyguardLocked) {
+                PowerManager.WakeLock wl = pm.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE,
+                        "CameraApp::PreCaptureWakeMain");
+                wl.acquire(5_000);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException ignored) {}
+                if (wl.isHeld()) wl.release();
+                // 重新评估状态，仅用于日志
+                interactive = pm.isInteractive();
+                keyguardLocked = km.isKeyguardLocked();
+                AppLogger.d(TAG, "唤醒后设备状态: interactive=" + interactive + ", keyguardLocked=" + keyguardLocked);
+            }
+        } catch (Exception e) {
+            AppLogger.w(TAG, "确保设备就绪时发生异常(Main)", e);
         }
     }
     
@@ -767,6 +843,7 @@ public class MainActivity extends AppCompatActivity {
         appIconContainer.setVisibility(View.GONE); // 隐藏图标容器
         btnSelectCamera.setVisibility(View.VISIBLE); // 显示摄像头选择按钮
         btnFlashToggle.setVisibility(View.VISIBLE); // 显示闪光灯设置按钮
+        btnScreenOff.setVisibility(View.VISIBLE); // 显示息屏按钮
         tvCaptureCount.setVisibility(View.VISIBLE); // 显示计数器
 
         // 确保ImageView隐藏，TextureView显示
@@ -779,6 +856,10 @@ public class MainActivity extends AppCompatActivity {
         if (textureView != null) {
             textureView.setVisibility(View.VISIBLE);
             // 注意：TextureView不支持背景绘制，所以我们移除设置背景颜色的代码
+        }
+        if (isScreenOffMode && blackOverlay != null) {
+            blackOverlay.setVisibility(View.VISIBLE);
+            blackOverlay.bringToFront();
         }
     
         // 更新摄像头选择按钮文本
@@ -802,6 +883,7 @@ public class MainActivity extends AppCompatActivity {
         appIconContainer.setVisibility(View.VISIBLE); // 显示图标容器
         btnSelectCamera.setVisibility(View.GONE); // 隐藏摄像头选择按钮
         btnFlashToggle.setVisibility(View.GONE); // 隐藏闪光灯设置按钮
+        btnScreenOff.setVisibility(View.GONE); // 隐藏息屏按钮
         tvCaptureCount.setVisibility(View.GONE); // 隐藏计数器
         isPreviewShowing = false;
         
@@ -823,6 +905,34 @@ public class MainActivity extends AppCompatActivity {
         }
         if (textureView != null) {
             textureView.setVisibility(View.GONE);
+        }
+        if (blackOverlay != null) {
+            blackOverlay.setVisibility(View.GONE);
+        }
+    }
+
+    private void enterScreenOffMode() {
+        isScreenOffMode = true;
+        try {
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.screenBrightness = 0.0f;
+            getWindow().setAttributes(lp);
+        } catch (Exception ignored) {}
+        if (blackOverlay != null) {
+            blackOverlay.setVisibility(View.VISIBLE);
+            blackOverlay.bringToFront();
+        }
+    }
+
+    private void exitScreenOffMode() {
+        isScreenOffMode = false;
+        try {
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.screenBrightness = -1f; // 恢复系统默认亮度
+            getWindow().setAttributes(lp);
+        } catch (Exception ignored) {}
+        if (blackOverlay != null) {
+            blackOverlay.setVisibility(View.GONE);
         }
     }
     
@@ -1036,6 +1146,11 @@ public class MainActivity extends AppCompatActivity {
         
         unregisterReceiver(serviceStatusReceiver);
         unregisterReceiver(captureCompletedReceiver); // 取消注册新的广播接收器
+        try {
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.screenBrightness = -1f;
+            getWindow().setAttributes(lp);
+        } catch (Exception ignored) {}
     }
     
     // 显示拍摄的照片

@@ -114,6 +114,16 @@
             android:src="@drawable/ic_flash_off"
             android:contentDescription="闪光灯状态"
             android:elevation="2dp" />
+
+        <!-- 息屏黑色覆盖层：点击任意位置恢复 -->
+        <View
+            android:id="@+id/black_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/black"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true" />
             
     </FrameLayout>
 
@@ -199,6 +209,19 @@
                 android:background="@drawable/rounded_button_secondary"
                 android:textColor="@android:color/white"
                 android:visibility="gone"
+                android:elevation="2dp" />
+
+            <Button
+                android:id="@+id/btn_screen_off"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="息屏"
+                android:textSize="14sp"
+                android:layout_marginStart="6dp"
+                android:padding="12dp"
+                android:background="@drawable/rounded_button_secondary"
+                android:textColor="@android:color/white"
                 android:elevation="2dp" />
 
         </LinearLayout>

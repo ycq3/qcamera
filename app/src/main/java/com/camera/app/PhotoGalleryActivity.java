@@ -18,7 +18,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -112,9 +112,9 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
             File appPhotoDir = new File(picturesDir, "CameraApp");
             if (appPhotoDir.exists()) {
                 photoDirs.add(appPhotoDir);
-                Log.d("PhotoGallery", "添加应用照片目录: " + appPhotoDir.getAbsolutePath());
+                AppLogger.d("PhotoGallery", "添加应用照片目录: " + appPhotoDir.getAbsolutePath());
             } else {
-                Log.d("PhotoGallery", "应用照片目录不存在: " + appPhotoDir.getAbsolutePath());
+                AppLogger.d("PhotoGallery", "应用照片目录不存在: " + appPhotoDir.getAbsolutePath());
             }
         }
         
@@ -309,7 +309,7 @@ public class PhotoGalleryActivity extends AppCompatActivity implements PhotoAdap
                         CloudUploadHelper.upload(PhotoGalleryActivity.this, sm, p);
                         success++;
                     } catch (Exception e) {
-                        android.util.Log.e("PhotoGallery", "上传失败: " + p, e);
+                        AppLogger.e("PhotoGallery", "上传失败: " + p, e);
                     }
                 }
                 return success;

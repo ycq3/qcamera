@@ -1,7 +1,7 @@
 package com.pipiqiang.qcamera.app;
 
 import android.content.Context;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
@@ -18,7 +18,7 @@ public class CameraWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        Log.d(TAG, "执行拍照任务");
+        AppLogger.d(TAG, "执行拍照任务");
         
         try {
             // 初始化管理器
@@ -44,14 +44,14 @@ public class CameraWorker extends Worker {
             
             return Result.success();
         } catch (Exception e) {
-            Log.e(TAG, "拍照任务失败", e);
+            AppLogger.e(TAG, "拍照任务失败", e);
             return Result.failure();
         }
     }
     
     private String takePicture(CustomCameraManager cameraManager) throws Exception {
         // 实现拍照逻辑
-        Log.d(TAG, "正在拍照...");
+        AppLogger.d(TAG, "正在拍照...");
         
         final String[] photoPath = {null};
         final Exception[] captureError = {null};
@@ -60,7 +60,7 @@ public class CameraWorker extends Worker {
         cameraManager.setCaptureCallback(new CustomCameraManager.CaptureCallback() {
             @Override
             public void onCaptureSuccess(String imagePath) {
-                Log.d(TAG, "拍照成功，图片路径: " + imagePath);
+                AppLogger.d(TAG, "拍照成功，图片路径: " + imagePath);
                 photoPath[0] = imagePath;
                 synchronized (lock) {
                     lock.notify();
@@ -69,7 +69,7 @@ public class CameraWorker extends Worker {
             
             @Override
             public void onCaptureError(Exception e) {
-                Log.e(TAG, "拍照失败", e);
+                AppLogger.e(TAG, "拍照失败", e);
                 captureError[0] = e;
                 synchronized (lock) {
                     lock.notify();
@@ -78,7 +78,7 @@ public class CameraWorker extends Worker {
         });
         
         // 打开相机
-        Log.d(TAG, "打开相机");
+        AppLogger.d(TAG, "打开相机");
         cameraManager.openCamera();
         
         // 等待一段时间确保相机打开
@@ -89,36 +89,36 @@ public class CameraWorker extends Worker {
         }
         
         // 拍照
-        Log.d(TAG, "执行拍照");
+        AppLogger.d(TAG, "执行拍照");
         cameraManager.takePicture();
         
         // 等待拍照完成
-        Log.d(TAG, "等待拍照完成");
+        AppLogger.d(TAG, "等待拍照完成");
         synchronized (lock) {
             lock.wait(15000); // 最多等待15秒
         }
         
         // 关闭相机
-        Log.d(TAG, "关闭相机");
+        AppLogger.d(TAG, "关闭相机");
         cameraManager.closeCamera();
         
         if (captureError[0] != null) {
             throw captureError[0];
         }
         
-        Log.d(TAG, "返回照片路径: " + photoPath[0]);
+        AppLogger.d(TAG, "返回照片路径: " + photoPath[0]);
         return photoPath[0];
     }
     
     private void processPicture(String photoPath, SettingsManager settingsManager,
                                StorageManager storageManager, EmailManager emailManager) {
         if (photoPath == null || photoPath.isEmpty()) {
-            Log.e(TAG, "照片路径为空");
+            AppLogger.e(TAG, "照片路径为空");
             return;
         }
         
         // 根据设置决定是保存照片还是发送邮件
-        Log.d(TAG, "处理照片: " + photoPath);
+        AppLogger.d(TAG, "处理照片: " + photoPath);
         
         if (settingsManager.isEmailSendingEnabled()) {
             // 发送邮件
@@ -126,16 +126,16 @@ public class CameraWorker extends Worker {
             if (emailManager.isValidEmail(emailAddress)) {
                 boolean success = emailManager.sendPhotoByEmail(photoPath, emailAddress);
                 if (success) {
-                    Log.d(TAG, "照片已发送到邮箱");
+                    AppLogger.d(TAG, "照片已发送到邮箱");
                 } else {
-                    Log.e(TAG, "发送邮件失败");
+                    AppLogger.e(TAG, "发送邮件失败");
                 }
             } else {
-                Log.e(TAG, "邮箱地址无效");
+                AppLogger.e(TAG, "邮箱地址无效");
             }
         } else {
             // 照片已保存到默认位置，无需额外操作
-            Log.d(TAG, "照片已保存到: " + photoPath);
+            AppLogger.d(TAG, "照片已保存到: " + photoPath);
         }
 
         // 云存储自动上传与成功后删除
@@ -143,7 +143,7 @@ public class CameraWorker extends Worker {
             try {
                 performCloudUpload(photoPath, settingsManager);
             } catch (Exception e) {
-                Log.e(TAG, "云上传失败", e);
+                AppLogger.e(TAG, "云上传失败", e);
             }
         }
     }
@@ -154,7 +154,7 @@ public class CameraWorker extends Worker {
     
     private void checkAndCleanStorage(SettingsManager settingsManager, StorageManager storageManager) {
         // 检查存储空间并在必要时清理旧照片
-        Log.d(TAG, "检查存储空间...");
+        AppLogger.d(TAG, "检查存储空间...");
         
         boolean autoClean = settingsManager.isAutoCleanEnabled();
         int minSpaceMB = settingsManager.getMinSpaceMB();

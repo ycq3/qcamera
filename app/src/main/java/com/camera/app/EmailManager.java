@@ -1,7 +1,7 @@
 package com.pipiqiang.qcamera.app;
 
 import android.content.Context;
-import android.util.Log;
+import com.pipiqiang.qcamera.app.AppLogger;
 
 public class EmailManager {
     
@@ -21,7 +21,7 @@ public class EmailManager {
      */
     public boolean sendPhotoByEmail(String photoPath, String emailAddress) {
         try {
-            Log.d(TAG, "准备发送照片到邮箱: " + emailAddress);
+            AppLogger.d(TAG, "准备发送照片到邮箱: " + emailAddress);
             
             // 在实际应用中，这里需要实现邮件发送逻辑
             // 可以使用JavaMail API或其他邮件库
@@ -38,7 +38,7 @@ public class EmailManager {
             
             return true;
         } catch (Exception e) {
-            Log.e(TAG, "发送邮件失败", e);
+            AppLogger.e(TAG, "发送邮件失败", e);
             return false;
         }
     }
@@ -56,7 +56,7 @@ public class EmailManager {
             Thread.currentThread().interrupt();
         }
         
-        Log.d(TAG, "邮件已发送到: " + emailAddress + ", 附件: " + photoPath);
+        AppLogger.d(TAG, "邮件已发送到: " + emailAddress + ", 附件: " + photoPath);
     }
     
     /**
